@@ -42,6 +42,13 @@ public class Discovery {
     private final Map<String, Map<URI, Long>> serviceURIs;
     private MulticastSocket multicastSocket;
 
+    // Main just for testing purposes
+    public static void main(String[] args) throws Exception {
+        Discovery discovery = new Discovery(DISCOVERY_ADDR, "test", "http://" + InetAddress.getLocalHost().getHostAddress());
+        discovery.startEmitting();
+        discovery.startReceiving();
+    }
+
     /**
      * @param serviceName the name of the service to announce
      * @param serviceURI  an uri string - representing the contact endpoint of the service being announced
@@ -61,7 +68,7 @@ public class Discovery {
         this.addr = DISCOVERY_ADDR;
         this.serviceName = serviceName;
         this.serviceURI = serviceURI;
-        serviceURIs = new HashMap<>();
+        serviceURIs = new ConcurrentHashMap<>();
     }
 
     /**
@@ -77,7 +84,7 @@ public class Discovery {
     }
 
     public void startEmitting() {
-        Log.info(String.format("Starting Discovery emission on: %s for: %s -> %s", addr, serviceName, serviceURI));
+        Log.info(String.format("Starting Discovery emission on: %s for: %s -> %s\n", addr, serviceName, serviceURI));
 
         byte[] announceBytes = String.format("%s%s%s", serviceName, DELIMITER, serviceURI).getBytes();
         DatagramPacket announcePkt = new DatagramPacket(announceBytes, announceBytes.length, addr);
@@ -93,6 +100,16 @@ public class Discovery {
                     e.printStackTrace();
                 }
             }, 0, DISCOVERY_PERIOD, TimeUnit.MILLISECONDS);
+            ScheduledFuture<?> gc = emitterExecutor.scheduleAtFixedRate(() -> {
+                long currentTimeMillis = System.currentTimeMillis();
+                for(Map<URI, Long> s: serviceURIs.values()){
+                    for(Map.Entry<URI,Long> e:s.entrySet()){
+                        if (e.getValue()+DISCOVERY_TIMEOUT<currentTimeMillis){
+                            s.remove(e.getKey());
+                        }
+                    }
+                }
+            }, DISCOVERY_TIMEOUT, DISCOVERY_TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -102,7 +119,7 @@ public class Discovery {
      * Starts sending service announcements at regular intervals...
      */
     public void startReceiving() {
-        Log.info(String.format("Starting Discovery reception on: %s for: %s -> %s", addr, serviceName, serviceURI));
+        Log.info(String.format("Starting Discovery reception on: %s for: %s -> %s\n", addr, serviceName, serviceURI));
 
         try {
             initMulticastSocket();
@@ -149,12 +166,9 @@ public class Discovery {
         } else {
             long currentTimeMillis = System.currentTimeMillis();
             //TODO: actually clean the map (will cause concurrency issues)
-            //probs good idea to use ConcurrentHashMap and filter every x time on the emmiter thread, since it's free most of the time
+            //probs good idea to use ConcurrentHashMap and filter every x time on the emitter thread, since it's free most of the time
             //and here we'd just map, not filter, it doesn't need to be perfect anyway
-            return serviceNameURIs.entrySet().stream()
-                    .filter(uriLongEntry -> currentTimeMillis - uriLongEntry.getValue() <= DISCOVERY_TIMEOUT)
-                    .map(Map.Entry::getKey)
-                    .toArray(URI[]::new);
+            return serviceNameURIs.keySet().toArray(new URI[0]);
         }
     }
 }
