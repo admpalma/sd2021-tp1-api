@@ -39,12 +39,14 @@ public class Discovery {
     private final InetSocketAddress addr;
     private final String serviceName;
     private final String serviceURI;
+    private final String domain;
     private final Map<String, Map<URI, Long>> serviceURIs;
+    private URI otherService;
     private MulticastSocket multicastSocket;
 
     // Main just for testing purposes
     public static void main(String[] args) throws Exception {
-        Discovery discovery = new Discovery(DISCOVERY_ADDR, "test", "http://" + InetAddress.getLocalHost().getHostAddress());
+        Discovery discovery = new Discovery(DISCOVERY_ADDR, "test", "http://" + InetAddress.getLocalHost().getHostAddress(),"test_domain");
         discovery.startEmitting();
         discovery.startReceiving();
     }
@@ -53,21 +55,23 @@ public class Discovery {
      * @param serviceName the name of the service to announce
      * @param serviceURI  an uri string - representing the contact endpoint of the service being announced
      */
-    Discovery(InetSocketAddress addr, String serviceName, String serviceURI) {
+    Discovery(InetSocketAddress addr, String serviceName, String serviceURI,String domain) {
         this.addr = addr;
         this.serviceName = serviceName;
         this.serviceURI = serviceURI;
-        serviceURIs = new HashMap<>();
+        this.domain = domain;
+        serviceURIs = new ConcurrentHashMap<>();
     }
 
     /**
      * @param serviceName the name of the service to announce
      * @param serviceURI  an uri string - representing the contact endpoint of the service being announced
      */
-    Discovery(String serviceName, String serviceURI) {
+    public Discovery(String serviceName, String serviceURI,String domain) {
         this.addr = DISCOVERY_ADDR;
         this.serviceName = serviceName;
         this.serviceURI = serviceURI;
+        this.domain = domain;
         serviceURIs = new ConcurrentHashMap<>();
     }
 
@@ -86,7 +90,7 @@ public class Discovery {
     public void startEmitting() {
         Log.info(String.format("Starting Discovery emission on: %s for: %s -> %s\n", addr, serviceName, serviceURI));
 
-        byte[] announceBytes = String.format("%s%s%s", serviceName, DELIMITER, serviceURI).getBytes();
+        byte[] announceBytes = String.format("%s:%s%s%s",domain, serviceName, DELIMITER, serviceURI).getBytes();
         DatagramPacket announcePkt = new DatagramPacket(announceBytes, announceBytes.length, addr);
 
         try {
@@ -133,13 +137,18 @@ public class Discovery {
                         pkt.setLength(maxLength);
                         multicastSocket.receive(pkt);
                         //TODO: we could dump this onto the other thread but it is so fast that it doesn't matter
-                        String msg = new String(pkt.getData(), 0, pkt.getLength());
+                        String[] parts = new String(pkt.getData(), 0, pkt.getLength()).split(":");
+                        String hostName = parts[0];
+                        String msg = parts[1];
                         String[] msgElems = msg.split(DELIMITER);
                         if (msgElems.length == 2) {    //periodic announcement
-                            String hostName = pkt.getAddress().getCanonicalHostName();
                             String hostAddress = pkt.getAddress().getHostAddress();
+                            String serviceName = msgElems[0];
                             URI uri = new URI(hostAddress);
-                            serviceURIs.computeIfAbsent(hostName, k -> new HashMap<>())
+                            if (hostName.equals(domain) && !serviceName.equals(this.serviceName)){
+                                otherService = uri;
+                            }
+                            serviceURIs.computeIfAbsent(msgElems[0], k -> new HashMap<>())
                                     .put(uri, System.currentTimeMillis());
                         }
                     } catch (IOException | URISyntaxException e) {
@@ -150,6 +159,9 @@ public class Discovery {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    public URI selfOther(){
+        return otherService;
     }
 
     /**

@@ -18,7 +18,7 @@ public class Spreadsheet {
 	private String sheetURL;
 	// number of the lines and columns
 	private int rows, columns;
-	// set of users with which ths sheet is shared
+	// set of users with which the sheet is shared
 	
 	private Set<String> sharedWith;
 	
