@@ -1,10 +1,20 @@
 package tp1.impl.engine;
 
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.Spreadsheet;
+import tp1.api.User;
 import tp1.api.engine.AbstractSpreadsheet;
 import tp1.api.service.rest.RestSpreadsheets;
+import tp1.api.service.rest.RestUsers;
+import tp1.api.service.util.Spreadsheets;
+import tp1.api.service.util.Users;
+import tp1.api.service.util.UsersImpl;
 import tp1.impl.Discovery;
 
 import java.net.InetAddress;
@@ -19,13 +29,16 @@ public class RestSpreadsheetsImpl implements tp1.api.service.rest.RestSpreadshee
     private final Map<String, Spreadsheet> sheets;
     private final String selfUri;
     private Discovery disc;
+    private Users userServer;
 //    http://srv2:8080/rest/spreadsheets/7830020
     public RestSpreadsheetsImpl(String domain) throws UnknownHostException {
-        sheets = new HashMap<String,Spreadsheet>();
         selfUri = "http://" + InetAddress.getLocalHost().getHostAddress()+"/rest";
         disc = new Discovery("sheets",selfUri ,domain);
         disc.startEmitting();
         disc.startReceiving();
+        sheets = new HashMap<String,Spreadsheet>();
+        userServer = new UsersImpl(disc.selfOther());
+
     }
 
     @Override
@@ -33,6 +46,7 @@ public class RestSpreadsheetsImpl implements tp1.api.service.rest.RestSpreadshee
         URI selfOther = disc.selfOther();
         if (selfOther == null || sheet == null || password == null)
             throw new WebApplicationException( Response.Status.fromStatusCode(400) );
+
         String id = "";
         do {
             id = String.valueOf((new Random()).nextInt(9999999));
