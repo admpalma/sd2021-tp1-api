@@ -1,4 +1,6 @@
-package tp1.impl;
+package tp1.server.resources;
+
+import jakarta.inject.Singleton;
 
 import java.io.IOException;
 import java.net.*;
@@ -17,6 +19,7 @@ import java.util.logging.Logger;
  *
  * <p>&lt;service-name-string&gt;&lt;delimiter-char&gt;&lt;service-uri-string&gt;</p>
  */
+@Singleton
 public class Discovery {
     private static final Logger Log = Logger.getLogger(Discovery.class.getName());
 
