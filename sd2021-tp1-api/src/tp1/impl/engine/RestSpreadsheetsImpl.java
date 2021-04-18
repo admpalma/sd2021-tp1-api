@@ -27,24 +27,13 @@ public class RestSpreadsheetsImpl implements tp1.api.service.rest.RestSpreadshee
         disc.startEmitting();
         disc.startReceiving();
         sheets = new HashMap<String,Spreadsheet>();
-        userServer = new UsersImpl(disc.selfOther());
+//        userServer = new UsersImpl(disc.sheet.getOwner()selfOther());
 
     }
 
     @Override
     public String createSpreadsheet(Spreadsheet sheet, String password) {
-        URI selfOther = disc.selfOther();
-        if (selfOther == null || sheet == null || password == null)
-            throw new WebApplicationException( Response.Status.fromStatusCode(400) );
-
-        String id = "";
-        do {
-            id = String.valueOf((new Random()).nextInt(9999999));
-        }while (sheets.containsKey(id));
-        sheet.setSheetId(id);
-        sheet.setSheetURL(selfUri+"/"+RestSpreadsheets.PATH+"/"+id);
-        sheets.put(id,sheet);
-        return id;
+        return null;
     }
 
     @Override

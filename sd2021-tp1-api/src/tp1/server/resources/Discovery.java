@@ -140,18 +140,10 @@ public class Discovery {
                         pkt.setLength(maxLength);
                         multicastSocket.receive(pkt);
                         //TODO: we could dump this onto the other thread but it is so fast that it doesn't matter
-                        String[] parts = new String(pkt.getData(), 0, pkt.getLength()).split(":");
-                        String hostName = parts[0];
-                        String msg = parts[1];
-                        String[] msgElems = msg.split(DELIMITER);
-                        if (msgElems.length == 2) {    //periodic announcement
-                            String hostAddress = pkt.getAddress().getHostAddress();
-                            String serviceName = msgElems[0];
-                            URI uri = new URI(hostAddress);
-                            if (hostName.equals(domain) && !serviceName.equals(this.serviceName)){
-                                otherService = uri;
-                            }
-                            serviceURIs.computeIfAbsent(msgElems[0], k -> new HashMap<>())
+                        String[] remainer = new String(pkt.getData(), 0, pkt.getLength()).split(DELIMITER);
+                        if (remainer.length == 2) {    //periodic announcement
+                            URI uri = new URI(remainer[1]);
+                            serviceURIs.computeIfAbsent(remainer[0], k -> new HashMap<>())
                                     .put(uri, System.currentTimeMillis());
                         }
                     } catch (IOException | URISyntaxException e) {
@@ -162,9 +154,6 @@ public class Discovery {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-    public URI selfOther(){
-        return otherService;
     }
 
     /**
