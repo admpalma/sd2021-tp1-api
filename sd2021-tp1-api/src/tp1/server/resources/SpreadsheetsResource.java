@@ -7,16 +7,21 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.apache.commons.lang3.tuple.Pair;
 import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.Spreadsheet;
 import tp1.api.User;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.rest.RestUsers;
+import tp1.util.Cell;
+import tp1.util.CellRange;
+import tp1.util.InvalidCellIdException;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -65,7 +70,7 @@ public class SpreadsheetsResource implements RestSpreadsheets {
         if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
             System.out.println("Success:");
             User u = r.readEntity(User.class);
-            System.out.println("User : " + u);
+            System.out.println(u);
             if (!u.getPassword().equals(password)) {
                 throw new WebApplicationException(Response.Status.BAD_REQUEST);
             }
@@ -87,7 +92,9 @@ public class SpreadsheetsResource implements RestSpreadsheets {
 
     @Override
     public void deleteSpreadsheet(String sheetId, String password) {
-
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        sheet = getSpreadsheet(sheetId,sheet.getOwner(),password);
+        spreadsheets.remove(sheet.getSheetId());
     }
 
     private Response getWithPassword(String sheetId, String userId, String password) {
@@ -109,14 +116,14 @@ public class SpreadsheetsResource implements RestSpreadsheets {
                 .get();
 
         if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-            System.out.println("Success:");
+//            System.out.println("Success:");
             User u = r.readEntity(User.class);
-            System.out.println("User : " + u);
+//            System.out.println(u);
             Spreadsheet spreadsheet = spreadsheets.get(sheetId);
             if (spreadsheet == null) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
-            if (!spreadsheet.getOwner().equals(u.getUserId())) {
+            if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch((o)->o.equals(u.getEmail()))) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
             return spreadsheet;
@@ -128,21 +135,44 @@ public class SpreadsheetsResource implements RestSpreadsheets {
 
     @Override
     public String[][] getSpreadsheetValues(String sheetId, String userId, String password) {
+        Spreadsheet sheet = getSpreadsheet(sheetId,userId,password);
+        // TODO
         return new String[0][];
     }
 
     @Override
     public void updateCell(String sheetId, String cell, String rawValue, String userId, String password) {
-
+        Spreadsheet sheet = getSpreadsheet(sheetId,userId,password);
+        Pair<Integer,Integer> c = null;
+        try {
+            c = Cell.CellId2Indexes(cell);
+        } catch (InvalidCellIdException e) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+        if (c.getLeft() < 0 || c.getLeft()>sheet.getRows() ||
+                c.getRight() < 0 ||c.getRight()>sheet.getColumns() )
+            throw new WebApplicationException();
+        sheet.setCellRawValue(cell,rawValue);
     }
 
     @Override
     public void shareSpreadsheet(String sheetId, String userId, String password) {
-
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        sheet = getSpreadsheet(sheetId,sheet.getOwner(),password);
+        Set<String> shared = sheet.getSharedWith();
+        if(!shared.add(userId))
+            throw new WebApplicationException(Response.Status.CONFLICT);
+        sheet.setSharedWith(shared);
     }
 
     @Override
     public void unshareSpreadsheet(String sheetId, String userId, String password) {
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        sheet = getSpreadsheet(sheetId,sheet.getOwner(),password);
+        Set<String> shared = sheet.getSharedWith();
+        if (!shared.remove(userId))
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        sheet.setSharedWith(shared);
 
     }
 }

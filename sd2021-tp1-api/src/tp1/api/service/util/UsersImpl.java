@@ -27,10 +27,7 @@ public class UsersImpl implements Users {
 
     @Override
     public Result<User> getUser(String userId, String password) {
-        WebTarget target = client.target( uri ).path( RestUsers.PATH );
-        return (Result<User>) target.path(userId).queryParam("password", password).request()
-                .accept(MediaType.APPLICATION_JSON)
-                .get();
+        return null;
     }
 
     @Override

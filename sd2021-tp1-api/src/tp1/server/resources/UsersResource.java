@@ -20,7 +20,7 @@ public class UsersResource implements RestUsers {
     private final Map<String, User> users;
     private final Discovery discovery;
 
-    private static Logger Log = Logger.getLogger(UsersResource.class.getName());
+    private static final Logger Log = Logger.getLogger(Discovery.class.getName());
 
     public UsersResource(Discovery discovery) {
         users = new HashMap<>();
@@ -85,7 +85,6 @@ public class UsersResource implements RestUsers {
     public User updateUser(String userId, String password, User user) {
         Log.info("updateUser : user = " + userId + "; pwd = " + password + " ; user = " + user);
         // TODO Complete method
-        // Check if user is valid, if not return HTTP CONFLICT (409)
         if (userId == null || password == null) {
             Log.info("UserId or password null.");
             throw new WebApplicationException(Status.BAD_REQUEST);
