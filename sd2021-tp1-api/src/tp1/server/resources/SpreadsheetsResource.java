@@ -1,6 +1,5 @@
 package tp1.server.resources;
 
-import jakarta.inject.Singleton;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -14,7 +13,10 @@ import tp1.api.User;
 import tp1.api.engine.AbstractSpreadsheet;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.rest.RestUsers;
+import tp1.api.service.util.Result;
+import tp1.api.service.util.Spreadsheets;
 import tp1.impl.engine.SpreadsheetEngineImpl;
+import tp1.server.rest.SpreadsheetsRestResource;
 import tp1.util.Cell;
 import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
@@ -22,17 +24,14 @@ import tp1.util.InvalidCellIdException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-
-@Singleton
-public class SpreadsheetsResource implements RestSpreadsheets {
-
+public class SpreadsheetsResource implements Spreadsheets {
+    URI uri;
     private final Map<String, Spreadsheet> spreadsheets;
     private final String ownUri;
     private final String domain;
@@ -42,6 +41,7 @@ public class SpreadsheetsResource implements RestSpreadsheets {
     private AtomicInteger totalSpreadsheets;
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
+
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
         config = new ClientConfig();
@@ -54,14 +54,13 @@ public class SpreadsheetsResource implements RestSpreadsheets {
         totalSpreadsheets = new AtomicInteger(0);
     }
 
-
     @Override
-    public String createSpreadsheet(Spreadsheet sheet, String password) {
-
+    public Result<String> createSpreadsheet(Spreadsheet sheet, String password) {
         URI[] selfOther = discovery.knownUrisOf(domain + ":users");
 
         if (selfOther == null || sheet == null || password == null)
-            throw new WebApplicationException(Response.Status.fromStatusCode(400));
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
+
 
         Client client = ClientBuilder.newClient(config);
         //System.out.println("http://" + selfOther[0] + ":8080" + RestUsers.PATH + "/" + sheet.getOwner());
@@ -76,39 +75,37 @@ public class SpreadsheetsResource implements RestSpreadsheets {
             User u = r.readEntity(User.class);
             //System.out.println(u);
             if (!u.getPassword().equals(password)) {
-                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                return Result.error(Result.ErrorCode.BAD_REQUEST);
             }
         } else {
             System.out.println("Error, HTTP error status: " + r.getStatus());
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
         if (sheet.getColumns() < 1 || sheet.getRows() < 1) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
         String id = String.valueOf(totalSpreadsheets.incrementAndGet());
 
         sheet.setSheetId(id);
         sheet.setSheetURL(ownUri + RestSpreadsheets.PATH + "/" + id);
         spreadsheets.put(id, sheet);
-        return id;
-
+        return Result.ok(id);
     }
 
     @Override
-    public void deleteSpreadsheet(String sheetId, String password) {
+    public Result<Void> deleteSpreadsheet(String sheetId, String password) {
         Spreadsheet sheet = spreadsheets.get(sheetId);
-        sheet = getSpreadsheet(sheetId, sheet.getOwner(), password);
-        spreadsheets.remove(sheet.getSheetId());
-    }
-
-    private Response getWithPassword(String sheetId, String userId, String password) {
-
-        return null;
+        Result<Spreadsheet> sheetResult = getSpreadsheet(sheetId, sheet.getOwner(), password);
+        if (sheetResult.isOK()) {
+            spreadsheets.remove(sheet.getSheetId());
+            return Result.ok();
+        } else {
+            return Result.error(sheetResult.error());
+        }
     }
 
     @Override
-    public Spreadsheet getSpreadsheet(String sheetId, String userId, String password) {
-
+    public Result<Spreadsheet> getSpreadsheet(String sheetId, String userId, String password) {
         URI[] selfOther = discovery.knownUrisOf(domain + ":users");
         ClientConfig config = new ClientConfig();
         Client client = ClientBuilder.newClient(config);
@@ -125,21 +122,72 @@ public class SpreadsheetsResource implements RestSpreadsheets {
 //            System.out.println(u);
             Spreadsheet spreadsheet = spreadsheets.get(sheetId);
             if (spreadsheet == null) {
-                throw new WebApplicationException(Response.Status.NOT_FOUND);
+                return Result.error(Result.ErrorCode.NOT_FOUND);
             }
             if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
                 //TODO fml i was right again
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+                return Result.error(Result.ErrorCode.FORBIDDEN);
             }
-            return spreadsheet;
+            return Result.ok(spreadsheet);
         } else {
             System.out.println("Error, HTTP error status: " + r.getStatus());
-            throw new WebApplicationException(Response.Status.fromStatusCode(r.getStatus()));
+            return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
         }
     }
 
     @Override
-    public String[][] getSpreadsheetValues(String sheetId, String userId, String password) {
+    public Result<Void> shareSpreadsheet(String sheetId, String userId, String password) {
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        Result<Spreadsheet> sheetResult = getSpreadsheet(sheetId, sheet.getOwner(), password);
+        if (!sheetResult.isOK()) {
+            return Result.error(sheetResult.error());
+        }
+        sheet = sheetResult.value();
+        Set<String> shared = sheet.getSharedWith();
+        if (!shared.add(userId))
+            return Result.error(Result.ErrorCode.CONFLICT);
+        sheet.setSharedWith(shared);
+        return Result.ok();
+    }
+
+    @Override
+    public Result<Void> unshareSpreadsheet(String sheetId, String userId, String password) {
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        Result<Spreadsheet> sheetResult = getSpreadsheet(sheetId, sheet.getOwner(), password);
+        if (!sheetResult.isOK()) {
+            return Result.error(sheetResult.error());
+        }
+        sheet = sheetResult.value();
+        Set<String> shared = sheet.getSharedWith();
+        if (!shared.remove(userId))
+            return Result.error(Result.ErrorCode.NOT_FOUND);
+        sheet.setSharedWith(shared);
+        return Result.ok();
+    }
+
+    @Override
+    public Result<Void> updateCell(String sheetId, String cell, String rawValue, String userId, String password) {
+        Result<Spreadsheet> sheetResult = getSpreadsheet(sheetId, userId, password);
+        Spreadsheet sheet;
+        if (!sheetResult.isOK()) {
+            return Result.error(sheetResult.error());
+        }
+        sheet = sheetResult.value();
+        Pair<Integer, Integer> c;
+        try {
+            c = Cell.CellId2Indexes(cell);
+        } catch (InvalidCellIdException e) {
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
+        }
+        if (c.getLeft() < 0 || c.getLeft() > sheet.getRows() ||
+                c.getRight() < 0 || c.getRight() > sheet.getColumns())
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
+        sheet.setCellRawValue(cell, rawValue);
+        return Result.ok();
+    }
+
+    @Override
+    public Result<String[][]> getSpreadsheetValues(String sheetId, String userId, String password) {
         URI[] selfOther = discovery.knownUrisOf(domain + ":users");
         ClientConfig config = new ClientConfig();
         Client client = ClientBuilder.newClient(config);
@@ -153,13 +201,13 @@ public class SpreadsheetsResource implements RestSpreadsheets {
             User u = r.readEntity(User.class);
             Spreadsheet spreadsheet = spreadsheets.get(sheetId);
             if (spreadsheet == null) {
-                throw new WebApplicationException(Response.Status.NOT_FOUND);
+                return Result.error(Result.ErrorCode.NOT_FOUND);
             }
             if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+                return Result.error(Result.ErrorCode.FORBIDDEN);
             }
-            return SpreadsheetEngineImpl.getInstance()
-                    .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, u.getEmail()));
+            return Result.ok(SpreadsheetEngineImpl.getInstance()
+                    .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, u.getEmail())));
         } else {
             System.out.println("Error, HTTP error status: " + r.getStatus());
             throw new WebApplicationException(Response.Status.fromStatusCode(r.getStatus()));
@@ -167,17 +215,17 @@ public class SpreadsheetsResource implements RestSpreadsheets {
     }
 
     @Override
-    public String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range) {
+    public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range) {
         Spreadsheet spreadsheet = spreadsheets.get(sheetId);
         if (spreadsheet == null) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
+            return Result.error(Result.ErrorCode.NOT_FOUND);
         }
         String userId = userEmail.split("@")[0];
         if (!spreadsheet.getOwner().equals(userId) && spreadsheet.getSharedWith().stream().noneMatch(userEmail::equals)) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+            return Result.error(Result.ErrorCode.FORBIDDEN);
         }
-        return new CellRange(range).extractRangeValuesFrom(SpreadsheetEngineImpl.getInstance()
-                .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, spreadsheet.getOwner() + "@" + domain)));
+        return Result.ok(new CellRange(range).extractRangeValuesFrom(SpreadsheetEngineImpl.getInstance()
+                .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, spreadsheet.getOwner() + "@" + domain))));
     }
 
     private AbstractSpreadsheet newAbstractSpreadsheet(Spreadsheet sheet, String userEmail) {
@@ -236,38 +284,4 @@ public class SpreadsheetsResource implements RestSpreadsheets {
         };
     }
 
-    @Override
-    public void updateCell(String sheetId, String cell, String rawValue, String userId, String password) {
-        Spreadsheet sheet = getSpreadsheet(sheetId, userId, password);
-        Pair<Integer, Integer> c = null;
-        try {
-            c = Cell.CellId2Indexes(cell);
-        } catch (InvalidCellIdException e) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
-        }
-        if (c.getLeft() < 0 || c.getLeft() > sheet.getRows() ||
-                c.getRight() < 0 || c.getRight() > sheet.getColumns())
-            throw new WebApplicationException();
-        sheet.setCellRawValue(cell, rawValue);
-    }
-
-    @Override
-    public void shareSpreadsheet(String sheetId, String userId, String password) {
-        Spreadsheet sheet = spreadsheets.get(sheetId);
-        sheet = getSpreadsheet(sheetId, sheet.getOwner(), password);
-        Set<String> shared = sheet.getSharedWith();
-        if (!shared.add(userId))
-            throw new WebApplicationException(Response.Status.CONFLICT);
-        sheet.setSharedWith(shared);
-    }
-
-    @Override
-    public void unshareSpreadsheet(String sheetId, String userId, String password) {
-        Spreadsheet sheet = spreadsheets.get(sheetId);
-        sheet = getSpreadsheet(sheetId, sheet.getOwner(), password);
-        Set<String> shared = sheet.getSharedWith();
-        if (!shared.remove(userId))
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        sheet.setSharedWith(shared);
-    }
 }

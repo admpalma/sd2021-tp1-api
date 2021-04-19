@@ -3,7 +3,7 @@ package tp1.server;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import tp1.server.resources.Discovery;
-import tp1.server.resources.SpreadsheetsResource;
+import tp1.server.rest.SpreadsheetsRestResource;
 
 import java.net.InetAddress;
 import java.net.URI;
@@ -27,7 +27,7 @@ public class SpreadsheetsServer {
             String serverURI = String.format("http://%s:%s/rest", ip, PORT);
 
             ResourceConfig config = new ResourceConfig();
-            config.register(new SpreadsheetsResource(args[0], serverURI, new Discovery(SERVICE, serverURI, args[0])));
+            config.register(new SpreadsheetsRestResource(args[0], serverURI, new Discovery(SERVICE, serverURI, args[0])));
 
             JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config);
 

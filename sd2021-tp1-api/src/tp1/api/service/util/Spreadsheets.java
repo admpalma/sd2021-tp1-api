@@ -105,4 +105,17 @@ public interface Spreadsheets {
 	 *		   400, otherwise
 	 */
 	Result<String[][]> getSpreadsheetValues(String sheetId, String userId, String password);
+
+	/**
+	 * Retrieves the calculated values of a range within a spreadsheet.
+	 *
+	 * @param userEmail The email of the user requesting the values (userId@domain)
+	 * @param sheetId   the spreadsheet whose values are being retrieved.
+	 * @param range     The range of calculated values to return.
+	 * @return 200, if the operation is successful
+	 * 403, if the spreadsheet is not shared with user, or the user is not the owner, or the password is incorrect.
+	 * 404, if the spreadsheet or the user do not exist
+	 * 400, otherwise
+	 */
+	Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range);
 }
