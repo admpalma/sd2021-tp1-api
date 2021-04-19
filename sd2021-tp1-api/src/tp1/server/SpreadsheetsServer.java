@@ -4,7 +4,6 @@ import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import tp1.server.resources.Discovery;
 import tp1.server.resources.SpreadsheetsResource;
-import tp1.server.resources.UsersResource;
 
 import java.net.InetAddress;
 import java.net.URI;

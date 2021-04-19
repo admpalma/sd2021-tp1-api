@@ -8,7 +8,7 @@ import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
 import tp1.server.resources.Discovery;
-import tp1.server.resources.UsersResource;
+import tp1.server.rest.UsersRestResource;
 
 public class UsersServer {
 
@@ -28,7 +28,7 @@ public class UsersServer {
             String serverURI = String.format("http://%s:%s/rest", ip, PORT);
 
             ResourceConfig config = new ResourceConfig();
-            config.register(new UsersResource(new Discovery(SERVICE, serverURI, args[0])));
+            config.register(new UsersRestResource(new Discovery(SERVICE, serverURI, args[0])));
 
             JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config);
 

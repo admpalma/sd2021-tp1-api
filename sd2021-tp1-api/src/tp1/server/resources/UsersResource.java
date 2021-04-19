@@ -1,27 +1,30 @@
 package tp1.server.resources;
 
-import jakarta.inject.Singleton;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.User;
-import tp1.api.service.rest.RestUsers;
+import tp1.api.service.util.Result;
+import tp1.api.service.util.Users;
 
+import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+public class UsersResource implements Users {
 
-@Singleton
-public class UsersResource implements RestUsers {
-
+    private URI uri;
+    private final Client client;
     private final ConcurrentMap<String, User> users;
     private final Discovery discovery;
 
-    private static final Logger Log = Logger.getLogger(Discovery.class.getName());
+    private static final Logger Log = Logger.getLogger(UsersResource.class.getName());
 
-    public UsersResource(Discovery discovery) {
+    public UsersResource(Discovery discovery){
+        client = ClientBuilder.newClient(new ClientConfig());
         users = new ConcurrentHashMap<>();
         this.discovery = discovery;
         discovery.startEmitting();
@@ -29,31 +32,30 @@ public class UsersResource implements RestUsers {
     }
 
     @Override
-    public String createUser(User user) {
+    public Result<String> createUser(User user) {
         Log.info("createUser : " + user);
 
         // Check if user is valid, if not return HTTP CONFLICT (409)
         if (user.getUserId() == null || user.getPassword() == null || user.getFullName() == null ||
                 user.getEmail() == null) {
             Log.info("User object invalid.");
-            throw new WebApplicationException(Status.BAD_REQUEST);
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
         //TODO concurrency
         // Check if userId does not exist exists, if not return HTTP CONFLICT (409)
         if (users.putIfAbsent(user.getUserId(), user) != null) {
             Log.info("User already exists.");
-            throw new WebApplicationException(Status.CONFLICT);
+            return Result.error(Result.ErrorCode.CONFLICT);
         }
 
         //Add the user to the map of users
         ;
 
-        return user.getUserId();
+        return Result.ok(user.getUserId());
     }
 
-
     @Override
-    public User getUser(String userId, String password) {
+    public Result<User> getUser(String userId, String password) {
         Log.info("getUser : user = " + userId + "; pwd = " + password);
 
         // Check if user is valid, if not return HTTP CONFLICT (409)
@@ -66,30 +68,29 @@ public class UsersResource implements RestUsers {
         // Check if user exists
         if (user == null) {
             Log.info("User does not exist.");
-            throw new WebApplicationException(Status.NOT_FOUND);
+            return Result.error(Result.ErrorCode.NOT_FOUND);
         }
         synchronized (user) {
             if (!users.containsKey(userId)) {
                 Log.info("User does not exist.");
-                throw new WebApplicationException(Status.NOT_FOUND);
+                return Result.error(Result.ErrorCode.NOT_FOUND);
             }
             //Check if the password is correct
             if (!user.getPassword().equals(password)) {
                 Log.info("Password is incorrect.");
-                throw new WebApplicationException(Status.FORBIDDEN);
+                return Result.error(Result.ErrorCode.FORBIDDEN);
             }
-            return user;
+            return Result.ok(user);
         }
     }
 
-
     @Override
-    public User updateUser(String userId, String password, User user) {
+    public Result<User> updateUser(String userId, String password, User user) {
         Log.info("updateUser : user = " + userId + "; pwd = " + password + " ; user = " + user);
         // TODO Complete method
         if (userId == null || password == null) {
             Log.info("UserId or password null.");
-            throw new WebApplicationException(Status.BAD_REQUEST);
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
 
         User userToUpdate = users.get(userId);
@@ -97,18 +98,18 @@ public class UsersResource implements RestUsers {
         // Check if user exists
         if (userToUpdate == null) {
             Log.info("User does not exist.");
-            throw new WebApplicationException(Status.NOT_FOUND);
+            return Result.error(Result.ErrorCode.NOT_FOUND);
         }
 
         synchronized (userToUpdate) {
             if (!users.containsKey(userId)) {
                 Log.info("User does not exist.");
-                throw new WebApplicationException(Status.NOT_FOUND);
+                return Result.error(Result.ErrorCode.NOT_FOUND);
             }
             //Check if the password is correct
             if (!userToUpdate.getPassword().equals(password)) {
                 Log.info("Password is incorrect.");
-                throw new WebApplicationException(Status.FORBIDDEN);
+                return Result.error(Result.ErrorCode.FORBIDDEN);
             }
 
             if (user.getFullName() != null) {
@@ -120,54 +121,51 @@ public class UsersResource implements RestUsers {
             if (user.getPassword() != null) {
                 userToUpdate.setPassword(user.getPassword());
             }
-            return userToUpdate;
+            return Result.ok(userToUpdate);
         }
     }
 
-
     @Override
-    public User deleteUser(String userId, String password) {
+    public Result<User> deleteUser(String userId, String password) {
         Log.info("deleteUser : user = " + userId + "; pwd = " + password);
         // TODO Complete method
         // Check if user is valid, if not return HTTP CONFLICT (409)
         if (userId == null || password == null) {
             Log.info("UserId or password null.");
-            throw new WebApplicationException(Status.FORBIDDEN);
+            return Result.error(Result.ErrorCode.FORBIDDEN);
         }
 
         // Check if user exists
         User user = users.get(userId);
         if (user == null) {
             Log.info("User does not exist.");
-            throw new WebApplicationException(Status.NOT_FOUND);
+            return Result.error(Result.ErrorCode.NOT_FOUND);
         }
 
         synchronized (user) {
             //Check if the password is correct
             if (!user.getPassword().equals(password)) {
                 Log.info("Password is incorrect.");
-                throw new WebApplicationException(Status.FORBIDDEN);
+                return Result.error(Result.ErrorCode.FORBIDDEN);
             }
             users.remove(userId);
-            return user;
+            return Result.ok(user);
         }
     }
 
-
     @Override
-    public List<User> searchUsers(String pattern) {
+    public Result<List<User>> searchUsers(String pattern) {
         Log.info("searchUsers : pattern = " + pattern);
         // TODO Complete method
         //Check if the password is correct
         if (pattern == null) {
             Log.info("Pattern is null.");
-            throw new WebApplicationException(Status.BAD_REQUEST);
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
 
-        return users.values().stream()
+        return Result.ok(users.values().stream()
                 .filter(user -> user.getFullName().toLowerCase().contains(pattern.toLowerCase()))
                 .map(user -> new User(user.getUserId(), user.getFullName(), user.getEmail(), ""))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
-
 }
