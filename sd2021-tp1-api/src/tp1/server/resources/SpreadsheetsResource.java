@@ -1,6 +1,5 @@
 package tp1.server.resources;
 
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
@@ -16,14 +15,11 @@ import tp1.api.service.rest.RestUsers;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Spreadsheets;
 import tp1.impl.engine.SpreadsheetEngineImpl;
-import tp1.server.rest.SpreadsheetsRestResource;
 import tp1.util.Cell;
 import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -31,20 +27,70 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class SpreadsheetsResource implements Spreadsheets {
+
+    private interface Requester {
+
+        Result<User> requestUser(URI serverURI, String userId, String password);
+
+        Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range);
+    }
+
+    private static class RestRequester implements Requester {
+
+        private final Client client;
+
+        RestRequester() {
+            client = ClientBuilder.newClient(new ClientConfig());
+        }
+
+        @Override
+        public Result<User> requestUser(URI serverURI, String userId, String password) {
+            WebTarget target = client.target(serverURI).path(RestUsers.PATH);
+            Response r = target.path(userId).queryParam("password", password).request()
+                    .accept(MediaType.APPLICATION_JSON)
+                    .get();
+            if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
+                User user = r.readEntity(User.class);
+                if (!user.getPassword().equals(password)) {
+                    return Result.error(Result.ErrorCode.BAD_REQUEST);
+                }
+                return Result.ok(user);
+            } else {
+                System.out.println("Error, HTTP error status: " + r.getStatus());
+                return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
+            }
+        }
+
+        @Override
+        public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range) {
+            WebTarget target = client.target(sheetURL);
+
+            Response r = target.path("rangeValues")
+                    .queryParam("userEmail", userEmail)
+                    .queryParam("range", range).request()
+                    .accept(MediaType.APPLICATION_JSON)
+                    .get();
+
+            if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
+                return Result.ok(r.readEntity(String[][].class));
+            } else {
+                return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
+            }
+        }
+    }
+
     URI uri;
     private final Map<String, Spreadsheet> spreadsheets;
     private final String ownUri;
     private final String domain;
-    private RestUsers userServer;
     private final Discovery discovery;
-    private final ClientConfig config;
-    private AtomicInteger totalSpreadsheets;
+    private final AtomicInteger totalSpreadsheets;
+    private final RestRequester restRequester;
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
-        config = new ClientConfig();
         spreadsheets = new HashMap<>();
         this.discovery = discovery;
         discovery.startEmitting();
@@ -52,6 +98,7 @@ public class SpreadsheetsResource implements Spreadsheets {
         this.ownUri = ownUri;
         this.domain = domain;
         totalSpreadsheets = new AtomicInteger(0);
+        restRequester = new RestRequester();
     }
 
     @Override
@@ -62,23 +109,9 @@ public class SpreadsheetsResource implements Spreadsheets {
             return Result.error(Result.ErrorCode.BAD_REQUEST);
 
 
-        Client client = ClientBuilder.newClient(config);
-        //System.out.println("http://" + selfOther[0] + ":8080" + RestUsers.PATH + "/" + sheet.getOwner());
-        WebTarget target = client.target(selfOther[0]).path(RestUsers.PATH);
-
-
-        Response r = target.path(sheet.getOwner()).queryParam("password", password).request()
-                .accept(MediaType.APPLICATION_JSON)
-                .get();
-        if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-            //System.out.println("Success:");
-            User u = r.readEntity(User.class);
-            //System.out.println(u);
-            if (!u.getPassword().equals(password)) {
-                return Result.error(Result.ErrorCode.BAD_REQUEST);
-            }
-        } else {
-            System.out.println("Error, HTTP error status: " + r.getStatus());
+        Result<User> userResult = requesterFromURI(selfOther[0])
+                .requestUser(selfOther[0], sheet.getOwner(), password);
+        if (!userResult.isOK()) {
             return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
         if (sheet.getColumns() < 1 || sheet.getRows() < 1) {
@@ -107,32 +140,21 @@ public class SpreadsheetsResource implements Spreadsheets {
     @Override
     public Result<Spreadsheet> getSpreadsheet(String sheetId, String userId, String password) {
         URI[] selfOther = discovery.knownUrisOf(domain + ":users");
-        ClientConfig config = new ClientConfig();
-        Client client = ClientBuilder.newClient(config);
-        //System.out.println("http://" + selfOther[0] + ":8080" + RestUsers.PATH + "/" + userId);
-        WebTarget target = client.target(selfOther[0]).path(RestUsers.PATH);
+        Result<User> userResult = requesterFromURI(selfOther[0])
+                .requestUser(selfOther[0], userId, password);
 
-        Response r = target.path(userId).queryParam("password", password).request()
-                .accept(MediaType.APPLICATION_JSON)
-                .get();
-
-        if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-//            System.out.println("Success:");
-            User u = r.readEntity(User.class);
-//            System.out.println(u);
-            Spreadsheet spreadsheet = spreadsheets.get(sheetId);
-            if (spreadsheet == null) {
-                return Result.error(Result.ErrorCode.NOT_FOUND);
-            }
-            if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
-                //TODO fml i was right again
-                return Result.error(Result.ErrorCode.FORBIDDEN);
-            }
-            return Result.ok(spreadsheet);
-        } else {
-            System.out.println("Error, HTTP error status: " + r.getStatus());
-            return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
+        if (!userResult.isOK()) {
+            return Result.error(userResult.error());
         }
+        User u = userResult.value();
+        Spreadsheet spreadsheet = spreadsheets.get(sheetId);
+        if (spreadsheet == null) {
+            return Result.error(Result.ErrorCode.NOT_FOUND);
+        }
+        if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
+            return Result.error(Result.ErrorCode.FORBIDDEN);
+        }
+        return Result.ok(spreadsheet);
     }
 
     @Override
@@ -189,29 +211,22 @@ public class SpreadsheetsResource implements Spreadsheets {
     @Override
     public Result<String[][]> getSpreadsheetValues(String sheetId, String userId, String password) {
         URI[] selfOther = discovery.knownUrisOf(domain + ":users");
-        ClientConfig config = new ClientConfig();
-        Client client = ClientBuilder.newClient(config);
-        WebTarget target = client.target(selfOther[0]).path(RestUsers.PATH);
 
-        Response r = target.path(userId).queryParam("password", password).request()
-                .accept(MediaType.APPLICATION_JSON)
-                .get();
+        Result<User> userResult = restRequester.requestUser(selfOther[0], userId, password);
 
-        if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-            User u = r.readEntity(User.class);
-            Spreadsheet spreadsheet = spreadsheets.get(sheetId);
-            if (spreadsheet == null) {
-                return Result.error(Result.ErrorCode.NOT_FOUND);
-            }
-            if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
-                return Result.error(Result.ErrorCode.FORBIDDEN);
-            }
-            return Result.ok(SpreadsheetEngineImpl.getInstance()
-                    .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, u.getEmail())));
-        } else {
-            System.out.println("Error, HTTP error status: " + r.getStatus());
-            throw new WebApplicationException(Response.Status.fromStatusCode(r.getStatus()));
+        if (!userResult.isOK()) {
+            return Result.error(userResult.error());
         }
+        User u = userResult.value();
+        Spreadsheet spreadsheet = spreadsheets.get(sheetId);
+        if (spreadsheet == null) {
+            return Result.error(Result.ErrorCode.NOT_FOUND);
+        }
+        if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
+            return Result.error(Result.ErrorCode.FORBIDDEN);
+        }
+        return Result.ok(SpreadsheetEngineImpl.getInstance()
+                .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, u.getEmail())));
     }
 
     @Override
@@ -257,30 +272,26 @@ public class SpreadsheetsResource implements Spreadsheets {
             @Override
             public String[][] getRangeValues(String sheetURL, String range) {
                 // get remote range values
-                try {
-                    ClientConfig config = new ClientConfig();
-                    Client client = ClientBuilder.newClient(config);
-                    URL url = new URL(sheetURL);
-
-                    //TODO this is horrible
-                    WebTarget target = client.target("http://" + url.getHost() + ":" + url.getPort()).path("rest" + RestSpreadsheets.PATH);
-
-                    Response r = target.path(url.getPath().split("/")[3])
-                            .path("rangeValues")
-                            .queryParam("userEmail", userEmail)
-                            .queryParam("range", range).request()
-                            .accept(MediaType.APPLICATION_JSON)
-                            .get();
-
-                    if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-                        return r.readEntity(String[][].class);
-                    } else {
-                        return null;
-                    }
-                } catch (MalformedURLException e) {
-                    throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                Result<String[][]> rangeValuesResult = requesterFromURI(sheetURL)
+                        .requestSpreadsheetRangeValues(sheetURL, userEmail, range);
+                if (!rangeValuesResult.isOK()) {
+                    return null;
                 }
+                return rangeValuesResult.value();
             }
+        };
+    }
+
+    private Requester requesterFromURI(String uri) {
+        return requesterFromURI(URI.create(uri));
+    }
+
+    private Requester requesterFromURI(URI uri) {
+        String serverType = uri.getPath().substring(1,5);
+        return switch (serverType) {
+            case "soap" -> null;
+            case "rest" -> restRequester;
+            default -> throw new IllegalArgumentException("Unexpected value: " + serverType);
         };
     }
 
