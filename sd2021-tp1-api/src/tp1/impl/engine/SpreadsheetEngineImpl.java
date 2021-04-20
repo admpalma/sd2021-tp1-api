@@ -1,16 +1,15 @@
 package tp1.impl.engine;
 
 
-import java.util.regex.Pattern;
-
 import com.gembox.spreadsheet.ExcelCell;
 import com.gembox.spreadsheet.ExcelFile;
 import com.gembox.spreadsheet.ExcelWorksheet;
 import com.gembox.spreadsheet.SpreadsheetInfo;
-
 import tp1.api.engine.AbstractSpreadsheet;
 import tp1.api.engine.SpreadsheetEngine;
 import tp1.util.CellRange;
+
+import java.util.regex.Pattern;
 
 
 /**

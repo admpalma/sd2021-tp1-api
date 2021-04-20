@@ -5,17 +5,13 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.xml.ws.WebServiceException;
-import org.apache.commons.lang3.function.TriFunction;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import tp1.api.User;
 import tp1.api.service.rest.RestUsers;
 import tp1.api.service.util.Result;
-import tp1.server.resources.SpreadsheetsResource;
 
 import java.net.URI;
-import java.util.function.Supplier;
 
 public class RestRequester extends AbstractRequester implements Requester {
 

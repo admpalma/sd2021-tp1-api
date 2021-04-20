@@ -1,8 +1,6 @@
 package tp1.server.soap;
 
 import jakarta.jws.WebService;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import tp1.api.User;
 import tp1.api.service.soap.SoapUsers;
 import tp1.api.service.soap.UsersException;

@@ -1,14 +1,13 @@
 package tp1.server;
 
+import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
+import org.glassfish.jersey.server.ResourceConfig;
+import tp1.server.resources.Discovery;
+import tp1.server.rest.UsersRestResource;
+
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.logging.Logger;
-
-import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
-import org.glassfish.jersey.server.ResourceConfig;
-
-import tp1.server.resources.Discovery;
-import tp1.server.rest.UsersRestResource;
 
 public class UsersServer {
 

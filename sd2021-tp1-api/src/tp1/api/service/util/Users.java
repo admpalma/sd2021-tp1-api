@@ -1,8 +1,8 @@
 package tp1.api.service.util;
 
-import java.util.List;
-
 import tp1.api.User;
+
+import java.util.List;
 
 public interface Users {
 

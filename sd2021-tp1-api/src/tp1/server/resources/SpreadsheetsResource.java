@@ -1,25 +1,10 @@
 package tp1.server.resources;
 
-import com.sun.xml.ws.client.BindingProviderProperties;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.xml.ws.BindingProvider;
-import jakarta.xml.ws.Service;
-import jakarta.xml.ws.WebServiceException;
 import org.apache.commons.lang3.tuple.Pair;
-import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.Spreadsheet;
 import tp1.api.User;
 import tp1.api.engine.AbstractSpreadsheet;
 import tp1.api.service.rest.RestSpreadsheets;
-import tp1.api.service.rest.RestUsers;
-import tp1.api.service.soap.SheetsException;
-import tp1.api.service.soap.SoapSpreadsheets;
-import tp1.api.service.soap.SoapUsers;
-import tp1.api.service.soap.UsersException;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Spreadsheets;
 import tp1.impl.engine.SpreadsheetEngineImpl;
@@ -30,11 +15,11 @@ import tp1.util.Cell;
 import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
 
-import javax.xml.namespace.QName;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 

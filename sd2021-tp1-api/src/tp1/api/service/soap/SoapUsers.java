@@ -1,10 +1,10 @@
 package tp1.api.service.soap;
 
-import java.util.List;
-
 import jakarta.jws.WebMethod;
 import jakarta.jws.WebService;
 import tp1.api.User;
+
+import java.util.List;
 
 @WebService(serviceName=SoapUsers.NAME, targetNamespace=SoapUsers.NAMESPACE, endpointInterface=SoapUsers.INTERFACE)
 public interface SoapUsers {

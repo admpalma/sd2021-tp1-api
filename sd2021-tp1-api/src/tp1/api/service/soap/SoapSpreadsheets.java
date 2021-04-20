@@ -2,8 +2,6 @@ package tp1.api.service.soap;
 
 import jakarta.jws.WebMethod;
 import jakarta.jws.WebService;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
 import tp1.api.Spreadsheet;
 
 @WebService(serviceName = SoapSpreadsheets.NAME, targetNamespace = SoapSpreadsheets.NAMESPACE, endpointInterface = SoapSpreadsheets.INTERFACE)

@@ -1,9 +1,9 @@
 package tp1.util;
 
-import java.util.regex.Pattern;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.regex.Pattern;
 
 public class Cell {
 

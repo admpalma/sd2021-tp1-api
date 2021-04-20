@@ -1,9 +1,8 @@
 package tp1.api;
 
-import java.util.Set;
-
-import jakarta.xml.bind.annotation.XmlTransient;
 import tp1.util.CellRange;
+
+import java.util.Set;
 
 
 /**
