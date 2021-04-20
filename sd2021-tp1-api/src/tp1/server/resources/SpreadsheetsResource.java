@@ -1,10 +1,14 @@
 package tp1.server.resources;
 
+import com.sun.xml.ws.client.BindingProviderProperties;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.xml.ws.BindingProvider;
+import jakarta.xml.ws.Service;
+import jakarta.xml.ws.WebServiceException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.Spreadsheet;
@@ -12,6 +16,10 @@ import tp1.api.User;
 import tp1.api.engine.AbstractSpreadsheet;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.rest.RestUsers;
+import tp1.api.service.soap.SheetsException;
+import tp1.api.service.soap.SoapSpreadsheets;
+import tp1.api.service.soap.SoapUsers;
+import tp1.api.service.soap.UsersException;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Spreadsheets;
 import tp1.impl.engine.SpreadsheetEngineImpl;
@@ -19,10 +27,11 @@ import tp1.util.Cell;
 import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
 
+import javax.xml.namespace.QName;
+import java.net.MalformedURLException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.net.URL;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -79,6 +88,62 @@ public class SpreadsheetsResource implements Spreadsheets {
         }
     }
 
+    private static class SoapRequester implements Requester {
+
+        public final static String USERS_WSDL = "/users/?wsdl";
+        public final static String SPREADSHEETS_WSDL = "/spreadsheets/?wsdl";
+
+        public final static int MAX_RETRIES = 3;
+        public final static long RETRY_PERIOD = 1000;
+        public final static int CONNECTION_TIMEOUT = 1000;
+        public final static int REPLY_TIMEOUT = 600;
+        private final QName usersQName;
+        private final QName spreadsheetsQName;
+
+        SoapRequester() {
+            usersQName = new QName(SoapUsers.NAMESPACE, SoapUsers.NAME);
+            spreadsheetsQName = new QName(SoapSpreadsheets.NAMESPACE, SoapSpreadsheets.NAME);
+        }
+
+        @Override
+        public Result<User> requestUser(URI serverURI, String userId, String password) {
+            try {
+                Service service = Service.create(new URL(serverURI + USERS_WSDL), usersQName);
+                SoapUsers users = service.getPort(SoapUsers.class);
+
+                //Set timeouts for executing operations
+                ((BindingProvider) users).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
+                ((BindingProvider) users).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
+
+                return Result.ok(users.getUser(userId, password));
+            } catch (UsersException e) {
+                return Result.error(Result.ErrorCode.valueOf(e.getMessage()));
+            } catch (WebServiceException | MalformedURLException e) {
+                return Result.error(Result.ErrorCode.INTERNAL_ERROR);
+            }
+        }
+
+        @Override
+        public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range) {
+            try {
+                int idSplitIndex = sheetURL.lastIndexOf('/');
+                Service service = Service.create(new URL(sheetURL.substring(0, idSplitIndex) + "/?wsdl"), spreadsheetsQName);
+                SoapSpreadsheets spreadsheets = service.getPort(SoapSpreadsheets.class);
+
+                //Set timeouts for executing operations
+                ((BindingProvider) spreadsheets).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
+                ((BindingProvider) spreadsheets).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
+
+                String[][] spreadsheetRangeValues = spreadsheets.getSpreadsheetRangeValues(sheetURL.substring(idSplitIndex + 1), userEmail, range);
+                return Result.ok(spreadsheetRangeValues);
+            } catch (SheetsException e) {
+                return Result.error(Result.ErrorCode.valueOf(e.getMessage()));
+            } catch (WebServiceException | MalformedURLException e) {
+                return Result.error(Result.ErrorCode.INTERNAL_ERROR);
+            }
+        }
+    }
+
     URI uri;
     private final Map<String, Spreadsheet> spreadsheets;
     private final String ownUri;
@@ -86,9 +151,9 @@ public class SpreadsheetsResource implements Spreadsheets {
     private final Discovery discovery;
     private final AtomicInteger totalSpreadsheets;
     private final RestRequester restRequester;
+    private final SoapRequester soapRequester;
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
-
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
         spreadsheets = new HashMap<>();
@@ -99,6 +164,7 @@ public class SpreadsheetsResource implements Spreadsheets {
         this.domain = domain;
         totalSpreadsheets = new AtomicInteger(0);
         restRequester = new RestRequester();
+        soapRequester = new SoapRequester();
     }
 
     @Override
@@ -151,7 +217,8 @@ public class SpreadsheetsResource implements Spreadsheets {
         if (spreadsheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
-        if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
+        Set<String> sharedWith = spreadsheet.getSharedWith();
+        if (!spreadsheet.getOwner().equals(u.getUserId()) && (sharedWith == null || sharedWith.stream().noneMatch(u.getEmail()::equals))) {
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
         return Result.ok(spreadsheet);
@@ -166,6 +233,9 @@ public class SpreadsheetsResource implements Spreadsheets {
         }
         sheet = sheetResult.value();
         Set<String> shared = sheet.getSharedWith();
+        if (shared == null) {
+            shared = new HashSet<>();
+        }
         if (!shared.add(userId))
             return Result.error(Result.ErrorCode.CONFLICT);
         sheet.setSharedWith(shared);
@@ -181,7 +251,7 @@ public class SpreadsheetsResource implements Spreadsheets {
         }
         sheet = sheetResult.value();
         Set<String> shared = sheet.getSharedWith();
-        if (!shared.remove(userId))
+        if (shared == null || !shared.remove(userId))
             return Result.error(Result.ErrorCode.NOT_FOUND);
         sheet.setSharedWith(shared);
         return Result.ok();
@@ -190,11 +260,10 @@ public class SpreadsheetsResource implements Spreadsheets {
     @Override
     public Result<Void> updateCell(String sheetId, String cell, String rawValue, String userId, String password) {
         Result<Spreadsheet> sheetResult = getSpreadsheet(sheetId, userId, password);
-        Spreadsheet sheet;
         if (!sheetResult.isOK()) {
             return Result.error(sheetResult.error());
         }
-        sheet = sheetResult.value();
+        Spreadsheet sheet = sheetResult.value();
         Pair<Integer, Integer> c;
         try {
             c = Cell.CellId2Indexes(cell);
@@ -212,7 +281,7 @@ public class SpreadsheetsResource implements Spreadsheets {
     public Result<String[][]> getSpreadsheetValues(String sheetId, String userId, String password) {
         URI[] selfOther = discovery.knownUrisOf(domain + ":users");
 
-        Result<User> userResult = restRequester.requestUser(selfOther[0], userId, password);
+        Result<User> userResult = requesterFromURI(selfOther[0]).requestUser(selfOther[0], userId, password);
 
         if (!userResult.isOK()) {
             return Result.error(userResult.error());
@@ -222,7 +291,8 @@ public class SpreadsheetsResource implements Spreadsheets {
         if (spreadsheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
-        if (!spreadsheet.getOwner().equals(u.getUserId()) && spreadsheet.getSharedWith().stream().noneMatch(u.getEmail()::equals)) {
+        Set<String> sharedWith = spreadsheet.getSharedWith();
+        if (!spreadsheet.getOwner().equals(u.getUserId()) && (sharedWith == null || sharedWith.stream().noneMatch(u.getEmail()::equals))) {
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
         return Result.ok(SpreadsheetEngineImpl.getInstance()
@@ -231,12 +301,14 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range) {
+        System.out.println(sheetId + " " + userEmail + " " + range);
         Spreadsheet spreadsheet = spreadsheets.get(sheetId);
         if (spreadsheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
         String userId = userEmail.split("@")[0];
-        if (!spreadsheet.getOwner().equals(userId) && spreadsheet.getSharedWith().stream().noneMatch(userEmail::equals)) {
+        Set<String> sharedWith = spreadsheet.getSharedWith();
+        if (!spreadsheet.getOwner().equals(userId) && (sharedWith == null || sharedWith.stream().noneMatch(userEmail::equals))) {
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
         return Result.ok(new CellRange(range).extractRangeValuesFrom(SpreadsheetEngineImpl.getInstance()
@@ -272,6 +344,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             @Override
             public String[][] getRangeValues(String sheetURL, String range) {
                 // get remote range values
+                System.out.println(sheetURL+ userEmail+ range);
                 Result<String[][]> rangeValuesResult = requesterFromURI(sheetURL)
                         .requestSpreadsheetRangeValues(sheetURL, userEmail, range);
                 if (!rangeValuesResult.isOK()) {
@@ -287,9 +360,9 @@ public class SpreadsheetsResource implements Spreadsheets {
     }
 
     private Requester requesterFromURI(URI uri) {
-        String serverType = uri.getPath().substring(1,5);
+        String serverType = uri.getPath().substring(1, 5);
         return switch (serverType) {
-            case "soap" -> null;
+            case "soap" -> soapRequester;
             case "rest" -> restRequester;
             default -> throw new IllegalArgumentException("Unexpected value: " + serverType);
         };
