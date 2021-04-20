@@ -23,6 +23,9 @@ import tp1.api.service.soap.UsersException;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Spreadsheets;
 import tp1.impl.engine.SpreadsheetEngineImpl;
+import tp1.server.resources.requester.Requester;
+import tp1.server.resources.requester.RestRequester;
+import tp1.server.resources.requester.SoapRequester;
 import tp1.util.Cell;
 import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
@@ -36,113 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class SpreadsheetsResource implements Spreadsheets {
-
-    private interface Requester {
-
-        Result<User> requestUser(URI serverURI, String userId, String password);
-
-        Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range);
-    }
-
-    private static class RestRequester implements Requester {
-
-        private final Client client;
-
-        RestRequester() {
-            client = ClientBuilder.newClient(new ClientConfig());
-        }
-
-        @Override
-        public Result<User> requestUser(URI serverURI, String userId, String password) {
-            WebTarget target = client.target(serverURI).path(RestUsers.PATH);
-            Response r = target.path(userId).queryParam("password", password).request()
-                    .accept(MediaType.APPLICATION_JSON)
-                    .get();
-            if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-                User user = r.readEntity(User.class);
-                if (!user.getPassword().equals(password)) {
-                    return Result.error(Result.ErrorCode.BAD_REQUEST);
-                }
-                return Result.ok(user);
-            } else {
-                System.out.println("Error, HTTP error status: " + r.getStatus());
-                return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
-            }
-        }
-
-        @Override
-        public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range) {
-            WebTarget target = client.target(sheetURL);
-
-            Response r = target.path("rangeValues")
-                    .queryParam("userEmail", userEmail)
-                    .queryParam("range", range).request()
-                    .accept(MediaType.APPLICATION_JSON)
-                    .get();
-
-            if (r.getStatus() == Response.Status.OK.getStatusCode() && r.hasEntity()) {
-                return Result.ok(r.readEntity(String[][].class));
-            } else {
-                return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
-            }
-        }
-    }
-
-    private static class SoapRequester implements Requester {
-
-        public final static String USERS_WSDL = "/users/?wsdl";
-        public final static String SPREADSHEETS_WSDL = "/spreadsheets/?wsdl";
-
-        public final static int MAX_RETRIES = 3;
-        public final static long RETRY_PERIOD = 1000;
-        public final static int CONNECTION_TIMEOUT = 1000;
-        public final static int REPLY_TIMEOUT = 600;
-        private final QName usersQName;
-        private final QName spreadsheetsQName;
-
-        SoapRequester() {
-            usersQName = new QName(SoapUsers.NAMESPACE, SoapUsers.NAME);
-            spreadsheetsQName = new QName(SoapSpreadsheets.NAMESPACE, SoapSpreadsheets.NAME);
-        }
-
-        @Override
-        public Result<User> requestUser(URI serverURI, String userId, String password) {
-            try {
-                Service service = Service.create(new URL(serverURI + USERS_WSDL), usersQName);
-                SoapUsers users = service.getPort(SoapUsers.class);
-
-                //Set timeouts for executing operations
-                ((BindingProvider) users).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
-                ((BindingProvider) users).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
-
-                return Result.ok(users.getUser(userId, password));
-            } catch (UsersException e) {
-                return Result.error(Result.ErrorCode.valueOf(e.getMessage()));
-            } catch (WebServiceException | MalformedURLException e) {
-                return Result.error(Result.ErrorCode.INTERNAL_ERROR);
-            }
-        }
-
-        @Override
-        public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range) {
-            try {
-                int idSplitIndex = sheetURL.lastIndexOf('/');
-                Service service = Service.create(new URL(sheetURL.substring(0, idSplitIndex) + "/?wsdl"), spreadsheetsQName);
-                SoapSpreadsheets spreadsheets = service.getPort(SoapSpreadsheets.class);
-
-                //Set timeouts for executing operations
-                ((BindingProvider) spreadsheets).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
-                ((BindingProvider) spreadsheets).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
-
-                String[][] spreadsheetRangeValues = spreadsheets.getSpreadsheetRangeValues(sheetURL.substring(idSplitIndex + 1), userEmail, range);
-                return Result.ok(spreadsheetRangeValues);
-            } catch (SheetsException e) {
-                return Result.error(Result.ErrorCode.valueOf(e.getMessage()));
-            } catch (WebServiceException | MalformedURLException e) {
-                return Result.error(Result.ErrorCode.INTERNAL_ERROR);
-            }
-        }
-    }
 
     URI uri;
     private final Map<String, Spreadsheet> spreadsheets;
