@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -50,25 +51,29 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<String> createSpreadsheet(Spreadsheet sheet, String password) {
-        URI[] selfOther = discovery.knownUrisOf(domain + ":users");
 
-        if (selfOther == null || sheet == null || password == null)
+        if (sheet == null || password == null)
             return Result.error(Result.ErrorCode.BAD_REQUEST);
 
+        if (sheet.getColumns() < 1 || sheet.getRows() < 1) {
+            return Result.error(Result.ErrorCode.BAD_REQUEST);
+        }
+
+        URI[] selfOther = discovery.knownUrisOf(domain + ":users");
 
         Result<User> userResult = requesterFromURI(selfOther[0])
                 .requestUser(selfOther[0], sheet.getOwner(), password);
         if (!userResult.isOK()) {
             return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
-        if (sheet.getColumns() < 1 || sheet.getRows() < 1) {
-            return Result.error(Result.ErrorCode.BAD_REQUEST);
-        }
         String id = String.valueOf(totalSpreadsheets.incrementAndGet());
 
         sheet.setSheetId(id);
         sheet.setSheetURL(ownUri + RestSpreadsheets.PATH + "/" + id);
-        spreadsheets.put(id, sheet);
+        synchronized (spreadsheets) {
+            spreadsheets.put(id, sheet);
+        }
+
         return Result.ok(id);
     }
 

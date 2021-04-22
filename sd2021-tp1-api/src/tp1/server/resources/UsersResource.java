@@ -80,8 +80,8 @@ public class UsersResource implements Users {
                 Log.info("Password is incorrect.");
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }
-            return Result.ok(user);
         }
+        return Result.ok(user);
     }
 
     @Override
