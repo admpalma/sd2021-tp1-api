@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -199,6 +198,13 @@ public class SpreadsheetsResource implements Spreadsheets {
         }
         return Result.ok(new CellRange(range).extractRangeValuesFrom(SpreadsheetEngineImpl.getInstance()
                 .computeSpreadsheetValues(newAbstractSpreadsheet(spreadsheet, spreadsheet.getOwner() + "@" + domain))));
+    }
+
+    @Override
+    public Result<Void> deleteUserSheets(String userId) {
+        if (spreadsheets.entrySet().removeIf(stringSpreadsheetEntry -> stringSpreadsheetEntry.getValue().getOwner().equals(userId)))
+            return Result.ok();
+        return Result.error(Result.ErrorCode.BAD_REQUEST);
     }
 
     private AbstractSpreadsheet newAbstractSpreadsheet(Spreadsheet sheet, String userEmail) {

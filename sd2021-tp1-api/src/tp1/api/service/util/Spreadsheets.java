@@ -118,4 +118,6 @@ public interface Spreadsheets {
 	 * 400, otherwise
 	 */
 	Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range);
+
+    Result<Void> deleteUserSheets(String userId);
 }

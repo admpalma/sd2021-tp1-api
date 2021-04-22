@@ -148,4 +148,17 @@ public interface RestSpreadsheets {
     @Path("/{sheetId}/share/{userId}")
     void unshareSpreadsheet(@PathParam("sheetId") String sheetId, @PathParam("userId") String userId,
                             @QueryParam("password") String password);
+
+
+    /**
+     * Deletes a user's spreadsheets. Only a server can call this method. :^) Hm yes secure
+     *
+     * @return 204 if the sheet was successful.
+     * 404 if no sheet exists with the given sheetId.
+     * 403 if the password is incorrect.
+     * 400 otherwise.
+     */
+    @DELETE
+    @Path("/deleteUserSheets/{userId}")
+    void deleteUserSheets(@PathParam("userId") String userId);
 }

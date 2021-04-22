@@ -10,7 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class UsersSoapServer {
-    private static Logger Log = Logger.getLogger(UsersSoapServer.class.getName());
+    private static final Logger Log = Logger.getLogger(UsersSoapServer.class.getName());
 
     static {
         System.setProperty("java.net.preferIPv4Stack", "true");
@@ -30,7 +30,7 @@ public class UsersSoapServer {
 
             server.setExecutor(Executors.newCachedThreadPool());
 
-            Endpoint soapUsersEndpoint = Endpoint.create(new UsersSoapResource(new Discovery(SERVICE, serverURI, args[0])));
+            Endpoint soapUsersEndpoint = Endpoint.create(new UsersSoapResource(new Discovery(SERVICE, serverURI, args[0]),args[0]));
 
             soapUsersEndpoint.publish(server.createContext(SOAP_USERS_PATH));
 

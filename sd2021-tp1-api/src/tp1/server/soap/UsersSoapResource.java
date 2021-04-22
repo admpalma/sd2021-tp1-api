@@ -15,8 +15,8 @@ public class UsersSoapResource implements SoapUsers {
 
     private final UsersResource usersResource;
 
-    public UsersSoapResource(Discovery discovery) {
-        usersResource = new UsersResource(discovery);
+    public UsersSoapResource(Discovery discovery,String domain) {
+        usersResource = new UsersResource(discovery, domain);
     }
 
     private <T> T extractResult(Result<T> result) throws UsersException {

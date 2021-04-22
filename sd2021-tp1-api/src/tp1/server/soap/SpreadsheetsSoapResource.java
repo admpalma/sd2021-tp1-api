@@ -64,4 +64,9 @@ public class SpreadsheetsSoapResource implements SoapSpreadsheets {
     public String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range) throws SheetsException {
         return extractResult(spreadsheetsResource.getSpreadsheetRangeValues(sheetId, userEmail, range));
     }
+
+    @Override
+    public void deleteUserSheets(String userId) throws SheetsException {
+        extractResult(spreadsheetsResource.deleteUserSheets(userId));
+    }
 }

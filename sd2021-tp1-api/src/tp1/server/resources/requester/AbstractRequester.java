@@ -14,21 +14,17 @@ public abstract class AbstractRequester {
     protected <R> Result<R> defaultRetry(Supplier<Result<R>> request) {
         for (int retries = 0; retries < MAX_RETRIES; retries++) {
 //            System.out.println("Requesting " + request);
-            try {
-                Result<R> result = request.get();
+            Result<R> result = request.get();
 //                System.out.println("Done request");
-                if (!result.isOK() && result.error() == Result.ErrorCode.INTERNAL_ERROR) {
-                    try {
-                        Thread.sleep(RETRY_PERIOD);
-                    } catch (InterruptedException e) {
+            if (!result.isOK() && result.error() == Result.ErrorCode.INTERNAL_ERROR) {
+                try {
+                    Thread.sleep(RETRY_PERIOD);
+                } catch (InterruptedException e) {
 //                        System.out.println("Interrupted Exception " + e);
-                        //nothing to be done here, if this happens we will just retry sooner.
-                    }
-                } else {
-                    return result;
+                    //nothing to be done here, if this happens we will just retry sooner.
                 }
-            }catch(Exception e){
-                System.out.println(e);
+            } else {
+                return result;
             }
         }
         return Result.error(Result.ErrorCode.INTERNAL_ERROR);

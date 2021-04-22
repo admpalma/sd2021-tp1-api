@@ -6,6 +6,9 @@ import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.User;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Users;
+import tp1.server.resources.requester.Requester;
+import tp1.server.resources.requester.RestRequester;
+import tp1.server.resources.requester.SoapRequester;
 
 import java.net.URI;
 import java.util.List;
@@ -16,19 +19,22 @@ import java.util.stream.Collectors;
 
 public class UsersResource implements Users {
 
-    private URI uri;
-    private final Client client;
     private final ConcurrentMap<String, User> users;
     private final Discovery discovery;
+    private final RestRequester restRequester;
+    private final SoapRequester soapRequester;
+    private final String domain;
 
     private static final Logger Log = Logger.getLogger(UsersResource.class.getName());
 
-    public UsersResource(Discovery discovery){
-        client = ClientBuilder.newClient(new ClientConfig());
+    public UsersResource(Discovery discovery,String domain){
         users = new ConcurrentHashMap<>();
         this.discovery = discovery;
+        this.domain = domain;
         discovery.startEmitting();
         discovery.startReceiving();
+        restRequester = new RestRequester();
+        soapRequester = new SoapRequester();
     }
 
     @Override
@@ -49,7 +55,6 @@ public class UsersResource implements Users {
         }
 
         //Add the user to the map of users
-        ;
 
         return Result.ok(user.getUserId());
     }
@@ -149,8 +154,11 @@ public class UsersResource implements Users {
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }
             users.remove(userId);
-            return Result.ok(user);
         }
+        URI uri = discovery.knownUrisOf(domain + ":sheets" )[0];
+        requesterFromURI(uri).deleteUserSheets(uri,userId);
+
+        return Result.ok(user);
     }
 
     @Override
@@ -167,5 +175,14 @@ public class UsersResource implements Users {
                 .filter(user -> user.getFullName().toLowerCase().contains(pattern.toLowerCase()))
                 .map(user -> new User(user.getUserId(), user.getFullName(), user.getEmail(), ""))
                 .collect(Collectors.toList()));
+    }
+
+    private Requester requesterFromURI(URI uri) {
+        String serverType = uri.getPath().substring(1, 5);
+        return switch (serverType) {
+            case "soap" -> soapRequester;
+            case "rest" -> restRequester;
+            default -> throw new IllegalArgumentException("Unexpected value: " + serverType);
+        };
     }
 }

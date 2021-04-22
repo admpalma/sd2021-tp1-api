@@ -17,8 +17,8 @@ public class UsersRestResource implements RestUsers {
 
     private final UsersResource usersResource;
 
-    public UsersRestResource(Discovery discovery) {
-        usersResource = new UsersResource(discovery);
+    public UsersRestResource(Discovery discovery,String domain) {
+        usersResource = new UsersResource(discovery, domain);
     }
 
     private <T> T extractResult(Result<T> result) {

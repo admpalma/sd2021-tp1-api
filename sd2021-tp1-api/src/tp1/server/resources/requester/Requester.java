@@ -10,4 +10,6 @@ public interface Requester {
     Result<User> requestUser(URI serverURI, String userId, String password);
 
     Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range);
+
+    Result<Void> deleteUserSheets(URI serverURI,String userId);
 }

@@ -103,4 +103,13 @@ public interface SoapSpreadsheets {
      */
     @WebMethod
     String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range) throws SheetsException;
+
+    /**
+     * Deletes a user's spreadsheets. Only a server can call this method. :^) Hm yes secure
+     *
+     * @param userId  - the id of the user whomst'dve sheets are to be deleted.
+     * @throws SheetsException otherwise
+     */
+    @WebMethod
+    void deleteUserSheets(String userId) throws SheetsException;
 }

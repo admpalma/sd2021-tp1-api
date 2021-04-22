@@ -73,4 +73,9 @@ public class SpreadsheetsRestResource implements RestSpreadsheets {
     public void unshareSpreadsheet(String sheetId, String userId, String password) {
         extractResult(spreadsheetsResource.unshareSpreadsheet(sheetId, userId, password));
     }
+
+    @Override
+    public void deleteUserSheets(String userId) {
+        extractResult(spreadsheetsResource.deleteUserSheets(userId));
+    }
 }

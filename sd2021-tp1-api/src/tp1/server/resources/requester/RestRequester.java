@@ -60,4 +60,20 @@ public class RestRequester extends AbstractRequester implements Requester {
             }
         });
     }
+
+    @Override
+    public Result<Void> deleteUserSheets(URI serverURI,String userId) {
+        return defaultRetry(() -> {
+            WebTarget target = client.target(serverURI).path(RestUsers.PATH);
+            Response r = target.path("deleteUserSheets").path(userId).request()
+                    .accept(MediaType.APPLICATION_JSON)
+                    .get();
+            if (r.getStatus() == Response.Status.OK.getStatusCode()) {
+                return Result.ok();
+            } else {
+                System.out.println("Error, HTTP error status: " + r.getStatus());
+                return Result.error(Result.ErrorCode.valueOf(Response.Status.fromStatusCode(r.getStatus()).name()));
+            }
+        });
+    }
 }

@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 public class UsersServer {
 
-    private static Logger Log = Logger.getLogger(UsersServer.class.getName());
+    private static final Logger Log = Logger.getLogger(UsersServer.class.getName());
 
     static {
         System.setProperty("java.net.preferIPv4Stack", "true");
@@ -27,7 +27,7 @@ public class UsersServer {
             String serverURI = String.format("http://%s:%s/rest", ip, PORT);
 
             ResourceConfig config = new ResourceConfig();
-            config.register(new UsersRestResource(new Discovery(SERVICE, serverURI, args[0])));
+            config.register(new UsersRestResource(new Discovery(SERVICE, serverURI, args[0]),args[0]));
 
             JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config);
 
