@@ -177,7 +177,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
         Set<String> sharedWith = spreadsheet.getSharedWith();
-        if (!spreadsheet.getOwner().equals(u.getUserId()) && (sharedWith == null || sharedWith.stream().noneMatch(u.getEmail()::equals))) {
+        if (!spreadsheet.getOwner().equals(u.getUserId()) && (sharedWith == null || !sharedWith.contains(u.getEmail()))) {
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
         return Result.ok(SpreadsheetEngineImpl.getInstance()
@@ -193,7 +193,7 @@ public class SpreadsheetsResource implements Spreadsheets {
         }
         String userId = userEmail.split("@")[0];
         Set<String> sharedWith = spreadsheet.getSharedWith();
-        if (!spreadsheet.getOwner().equals(userId) && (sharedWith == null || sharedWith.stream().noneMatch(userEmail::equals))) {
+        if (!spreadsheet.getOwner().equals(userId) && (sharedWith == null || !sharedWith.contains(userEmail))) {
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
         return Result.ok(new CellRange(range).extractRangeValuesFrom(SpreadsheetEngineImpl.getInstance()
@@ -202,8 +202,9 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<Void> deleteUserSheets(String userId) {
-        if (spreadsheets.entrySet().removeIf(stringSpreadsheetEntry -> stringSpreadsheetEntry.getValue().getOwner().equals(userId)))
+        if (spreadsheets.entrySet().removeIf(stringSpreadsheetEntry -> stringSpreadsheetEntry.getValue().getOwner().equals(userId))) {
             return Result.ok();
+        }
         return Result.error(Result.ErrorCode.BAD_REQUEST);
     }
 

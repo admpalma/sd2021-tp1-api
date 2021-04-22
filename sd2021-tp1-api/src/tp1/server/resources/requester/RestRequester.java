@@ -8,6 +8,7 @@ import jakarta.ws.rs.core.Response;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.ClientProperties;
 import tp1.api.User;
+import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.rest.RestUsers;
 import tp1.api.service.util.Result;
 
@@ -64,11 +65,11 @@ public class RestRequester extends AbstractRequester implements Requester {
     @Override
     public Result<Void> deleteUserSheets(URI serverURI,String userId) {
         return defaultRetry(() -> {
-            WebTarget target = client.target(serverURI).path(RestUsers.PATH);
+            WebTarget target = client.target(serverURI).path(RestSpreadsheets.PATH);
             Response r = target.path("deleteUserSheets").path(userId).request()
                     .accept(MediaType.APPLICATION_JSON)
-                    .get();
-            if (r.getStatus() == Response.Status.OK.getStatusCode()) {
+                    .delete();
+            if (r.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
                 return Result.ok();
             } else {
                 System.out.println("Error, HTTP error status: " + r.getStatus());

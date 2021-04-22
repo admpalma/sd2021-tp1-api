@@ -27,7 +27,7 @@ public class UsersResource implements Users {
 
     private static final Logger Log = Logger.getLogger(UsersResource.class.getName());
 
-    public UsersResource(Discovery discovery,String domain){
+    public UsersResource(Discovery discovery, String domain) {
         users = new ConcurrentHashMap<>();
         this.discovery = discovery;
         this.domain = domain;
@@ -135,8 +135,13 @@ public class UsersResource implements Users {
         Log.info("deleteUser : user = " + userId + "; pwd = " + password);
         // TODO Complete method
         // Check if user is valid, if not return HTTP CONFLICT (409)
-        if (userId == null || password == null) {
-            Log.info("UserId or password null.");
+        if (userId == null) {
+            Log.info("UserId null.");
+            return Result.error(Result.ErrorCode.NOT_FOUND);
+        }
+
+        if (password == null) {
+            Log.info("Password null.");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
 
@@ -155,8 +160,8 @@ public class UsersResource implements Users {
             }
             users.remove(userId);
         }
-        URI uri = discovery.knownUrisOf(domain + ":sheets" )[0];
-        requesterFromURI(uri).deleteUserSheets(uri,userId);
+        URI uri = discovery.knownUrisOf(domain + ":sheets")[0];
+        requesterFromURI(uri).deleteUserSheets(uri, userId);
 
         return Result.ok(user);
     }

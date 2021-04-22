@@ -72,16 +72,15 @@ public class SoapRequester extends AbstractRequester implements Requester {
     }
 
     @Override
-    public Result<Void> deleteUserSheets(URI serverURI,String userId) {
+    public Result<Void> deleteUserSheets(URI serverURI, String userId) {
         return defaultRetry(() -> {
             try {
-                Service service = Service.create(new URL(serverURI + USERS_WSDL), usersQName);
-                SoapSpreadsheets users = service.getPort(SoapSpreadsheets.class);
-
+                Service service = Service.create(new URL(serverURI + SPREADSHEETS_WSDL), spreadsheetsQName);
+                SoapSpreadsheets sheets = service.getPort(SoapSpreadsheets.class);
                 //Set timeouts for executing operations
-                ((BindingProvider) users).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
-                ((BindingProvider) users).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
-                users.deleteUserSheets(userId);
+                ((BindingProvider) sheets).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
+                ((BindingProvider) sheets).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
+                sheets.deleteUserSheets(userId);
                 return Result.ok();
             } catch (SheetsException e) {
                 return Result.error(Result.ErrorCode.valueOf(e.getMessage()));
