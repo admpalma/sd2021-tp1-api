@@ -1,5 +1,6 @@
 package tp1.server.resources;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import tp1.api.Spreadsheet;
 import tp1.api.User;
@@ -20,13 +21,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class SpreadsheetsResource implements Spreadsheets {
 
     URI uri;
+    private final static int CACHE_TIMEOUT = 10000;
     private final Map<String, Spreadsheet> spreadsheets;
+    private final Map<String, Pair<String[][], Long>> rangeCache;
     private final String ownUri;
     private final String domain;
     private final Discovery discovery;
@@ -37,7 +41,8 @@ public class SpreadsheetsResource implements Spreadsheets {
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
-        spreadsheets = new HashMap<>();
+        spreadsheets = new ConcurrentHashMap<>();
+        rangeCache = new ConcurrentHashMap<>();
         this.discovery = discovery;
         discovery.startEmitting();
         discovery.startReceiving();
@@ -69,9 +74,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
         sheet.setSheetId(id);
         sheet.setSheetURL(ownUri + RestSpreadsheets.PATH + "/" + id);
-        synchronized (spreadsheets) {
-            spreadsheets.put(id, sheet);
-        }
+        spreadsheets.put(id, sheet);
 
         return Result.ok(id);
     }
@@ -238,11 +241,16 @@ public class SpreadsheetsResource implements Spreadsheets {
             public String[][] getRangeValues(String sheetURL, String range) {
                 // get remote range values
                 System.out.println(sheetURL+ userEmail+ range);
+                Pair<String[][], Long> cells = rangeCache.get(sheetURL+range);
+                if (cells != null && cells.getRight() + CACHE_TIMEOUT > System.currentTimeMillis())
+                    return cells.getLeft();
+
                 Result<String[][]> rangeValuesResult = requesterFromURI(sheetURL)
                         .requestSpreadsheetRangeValues(sheetURL, userEmail, range);
                 if (!rangeValuesResult.isOK()) {
                     return null;
                 }
+                rangeCache.put(sheetURL+range,new ImmutablePair<>(rangeValuesResult.value(),System.currentTimeMillis()));
                 return rangeValuesResult.value();
             }
         };
