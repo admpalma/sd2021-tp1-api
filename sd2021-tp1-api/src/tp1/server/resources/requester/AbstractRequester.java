@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 public abstract class AbstractRequester {
 
     protected final static int MAX_RETRIES = 3;
-    protected final static long RETRY_PERIOD = 1000;
+    protected final static long RETRY_PERIOD = 100;
     protected final static int CONNECTION_TIMEOUT = 1000;
     protected final static int REPLY_TIMEOUT = 1000;
 

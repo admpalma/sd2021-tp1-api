@@ -17,7 +17,9 @@ import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,9 +29,10 @@ import java.util.logging.Logger;
 public class SpreadsheetsResource implements Spreadsheets {
 
     URI uri;
-    private final static int CACHE_FAIL_TTL = 10000;
+    private final static int CACHE_FAIL_TTL = 60000;
     private final static int CACHE_VALID_TTL = 200;
     private final ConcurrentMap<String, Spreadsheet> spreadsheets;
+    private final ConcurrentMap<Spreadsheet, Pair<String[][], Long>> spreadsheetValues;
     private final ConcurrentMap<String, Pair<String[][], Long>> rangeCache;
     private final String ownUri;
     private final String domain;
@@ -42,6 +45,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
         spreadsheets = new ConcurrentHashMap<>();
+        spreadsheetValues = new ConcurrentHashMap<>();
         rangeCache = new ConcurrentHashMap<>();
         this.discovery = discovery;
         discovery.startEmitting();
@@ -90,6 +94,7 @@ public class SpreadsheetsResource implements Spreadsheets {
                 return Result.error(userResult.error());
             } else {
                 spreadsheets.remove(sheet.getSheetId());
+                spreadsheetValues.remove(sheet);
             }
         }
         return Result.ok();
@@ -125,17 +130,14 @@ public class SpreadsheetsResource implements Spreadsheets {
     public Result<Void> shareSpreadsheet(String sheetId, String userId, String password) {
         Spreadsheet sheet = spreadsheets.get(sheetId);
         if (sheet == null) {
-            System.out.println("asdasdasdadasda");
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
         Result<User> userResult = authenticateUser(sheet.getOwner(), password);
         if (!userResult.isOK()) {
-            System.out.println("sdfgopidfsgiophdfgsiopjdsfghiojdsfghijo");
             return Result.error(userResult.error());
         }
         synchronized (sheet) {
             if (!spreadsheets.containsKey(sheetId)) {
-                System.out.println("748456757457");
                 return Result.error(Result.ErrorCode.NOT_FOUND);
             }
             Set<String> shared = sheet.getSharedWith();
@@ -196,6 +198,7 @@ public class SpreadsheetsResource implements Spreadsheets {
                     c.getRight() < 0 || c.getRight() > sheet.getColumns())
                 return Result.error(Result.ErrorCode.BAD_REQUEST);
             sheet.setCellRawValue(cell, rawValue);
+            spreadsheetValues.remove(sheet);
         }
         return Result.ok();
     }
@@ -241,17 +244,26 @@ public class SpreadsheetsResource implements Spreadsheets {
             if (!sheet.getOwner().equals(userId) && (sharedWith == null || !sharedWith.contains(userEmail))) {
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }
-            return Result.ok(new CellRange(range).extractRangeValuesFrom(SpreadsheetEngineImpl.getInstance()
-                    .computeSpreadsheetValues(newAbstractSpreadsheet(sheet, sheet.getOwner() + "@" + domain))));
+            String[][] values;
+            Pair<String[][], Long> result = spreadsheetValues.get(sheet);
+            if (result == null || result.getRight() + CACHE_VALID_TTL < System.currentTimeMillis()) {
+                values = SpreadsheetEngineImpl.getInstance()
+                        .computeSpreadsheetValues(newAbstractSpreadsheet(sheet, sheet.getOwner() + "@" + domain));
+                spreadsheetValues.put(sheet, new ImmutablePair<>(values, System.currentTimeMillis()));
+            } else {
+                values = result.getLeft();
+            }
+            return Result.ok(new CellRange(range).extractRangeValuesFrom(values));
         }
     }
 
     @Override
     public Result<Void> deleteUserSheets(String userId) {
         if (spreadsheets.entrySet().removeIf(sheetIdSpreadsheetEntry -> sheetIdSpreadsheetEntry.getValue().getOwner().equals(userId))) {
+            spreadsheetValues.entrySet().removeIf(sheetValueEntry -> sheetValueEntry.getKey().getOwner().equals(userId));
             return Result.ok();
         }
-        return Result.error(Result.ErrorCode.BAD_REQUEST);
+        return Result.error(Result.ErrorCode.NOT_FOUND);
     }
 
     private AbstractSpreadsheet newAbstractSpreadsheet(Spreadsheet sheet, String userEmail) {
