@@ -1,8 +1,5 @@
 package tp1.server.resources;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import org.glassfish.jersey.client.ClientConfig;
 import tp1.api.User;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Users;

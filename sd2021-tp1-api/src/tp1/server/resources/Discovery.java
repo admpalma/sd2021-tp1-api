@@ -48,13 +48,6 @@ public class Discovery {
     private URI otherService;
     private MulticastSocket multicastSocket;
 
-    // Main just for testing purposes
-    public static void main(String[] args) throws Exception {
-        Discovery discovery = new Discovery(DISCOVERY_ADDR, "test", "http://" + InetAddress.getLocalHost().getHostAddress(),"test_domain");
-        discovery.startEmitting();
-        discovery.startReceiving();
-    }
-
     /**
      * @param serviceName the name of the service to announce
      * @param serviceURI  an uri string - representing the contact endpoint of the service being announced

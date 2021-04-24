@@ -17,7 +17,6 @@ import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -106,7 +105,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
         Set<String> sharedWith = spreadsheet.getSharedWith();
-        if (!spreadsheet.getOwner().equals(u.getUserId()) && (sharedWith == null || sharedWith.stream().noneMatch(u.getEmail()::equals))) {
+        if (!spreadsheet.getOwner().equals(u.getUserId()) && (sharedWith == null || !sharedWith.contains(u.getEmail()))) {
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
         return Result.ok(spreadsheet);
