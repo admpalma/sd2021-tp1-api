@@ -27,7 +27,8 @@ import java.util.logging.Logger;
 public class SpreadsheetsResource implements Spreadsheets {
 
     URI uri;
-    private final static int CACHE_TIMEOUT = 10000;
+    private final static int CACHE_FAIL_TTL = 10000;
+    private final static int CACHE_VALID_TTL = 200;
     private final ConcurrentMap<String, Spreadsheet> spreadsheets;
     private final ConcurrentMap<String, Pair<String[][], Long>> rangeCache;
     private final String ownUri;
@@ -284,12 +285,17 @@ public class SpreadsheetsResource implements Spreadsheets {
                 // get remote range values
                 System.out.println(sheetURL + userEmail + range);
                 Pair<String[][], Long> cells = rangeCache.get(sheetURL + range);
-                if (cells != null && cells.getRight() + CACHE_TIMEOUT > System.currentTimeMillis())
+                if (cells != null && cells.getRight() + CACHE_VALID_TTL > System.currentTimeMillis()) {
                     return cells.getLeft();
+                }
 
                 Result<String[][]> rangeValuesResult = requesterFromURI(sheetURL)
                         .requestSpreadsheetRangeValues(sheetURL, userEmail, range);
+
                 if (!rangeValuesResult.isOK()) {
+                    if (cells != null && cells.getRight() + CACHE_FAIL_TTL > System.currentTimeMillis()) {
+                        return cells.getLeft();
+                    }
                     return null;
                 }
                 rangeCache.put(sheetURL + range, new ImmutablePair<>(rangeValuesResult.value(), System.currentTimeMillis()));
