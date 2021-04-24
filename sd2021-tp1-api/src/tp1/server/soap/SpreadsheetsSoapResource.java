@@ -37,13 +37,7 @@ public class SpreadsheetsSoapResource implements SoapSpreadsheets {
 
     @Override
     public Spreadsheet getSpreadsheet(String sheetId, String userId, String password) throws SheetsException {
-        Spreadsheet spreadsheet = extractResult(spreadsheetsResource.getSpreadsheet(sheetId, userId, password));
-        if (userId.equals("jackie.rau") && sheetId.equals("1")) {
-            System.out.println(spreadsheet);
-            System.out.println(spreadsheet.getSheetId());
-            System.out.println(spreadsheet.getSheetURL());
-        }
-        return spreadsheet;
+        return extractResult(spreadsheetsResource.getSpreadsheet(sheetId, userId, password));
     }
 
     @Override

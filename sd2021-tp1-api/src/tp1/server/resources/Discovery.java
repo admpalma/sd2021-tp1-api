@@ -52,7 +52,7 @@ public class Discovery {
      * @param serviceName the name of the service to announce
      * @param serviceURI  an uri string - representing the contact endpoint of the service being announced
      */
-    Discovery(InetSocketAddress addr, String serviceName, String serviceURI,String domain) {
+    Discovery(InetSocketAddress addr, String serviceName, String serviceURI, String domain) {
         this.addr = addr;
         this.serviceName = serviceName;
         this.serviceURI = serviceURI;
@@ -64,7 +64,7 @@ public class Discovery {
      * @param serviceName the name of the service to announce
      * @param serviceURI  an uri string - representing the contact endpoint of the service being announced
      */
-    public Discovery(String serviceName, String serviceURI,String domain) {
+    public Discovery(String serviceName, String serviceURI, String domain) {
         this.addr = DISCOVERY_ADDR;
         this.serviceName = serviceName;
         this.serviceURI = serviceURI;
@@ -87,7 +87,7 @@ public class Discovery {
     public void startEmitting() {
         Log.info(String.format("Starting Discovery emission on: %s for: %s -> %s\n", addr, serviceName, serviceURI));
 
-        byte[] announceBytes = String.format("%s:%s%s%s",domain, serviceName, DELIMITER, serviceURI).getBytes();
+        byte[] announceBytes = String.format("%s:%s%s%s", domain, serviceName, DELIMITER, serviceURI).getBytes();
         DatagramPacket announcePkt = new DatagramPacket(announceBytes, announceBytes.length, addr);
 
         try {
@@ -103,9 +103,9 @@ public class Discovery {
             }, 0, DISCOVERY_PERIOD, TimeUnit.MILLISECONDS);
             ScheduledFuture<?> gc = emitterExecutor.scheduleAtFixedRate(() -> {
                 long currentTimeMillis = System.currentTimeMillis();
-                for(Map<URI, Long> s: serviceURIs.values()){
-                    for(Map.Entry<URI,Long> e:s.entrySet()){
-                        if (e.getValue()+DISCOVERY_TIMEOUT<currentTimeMillis){
+                for (Map<URI, Long> s : serviceURIs.values()) {
+                    for (Map.Entry<URI, Long> e : s.entrySet()) {
+                        if (e.getValue() + DISCOVERY_TIMEOUT < currentTimeMillis) {
                             s.remove(e.getKey());
                         }
                     }

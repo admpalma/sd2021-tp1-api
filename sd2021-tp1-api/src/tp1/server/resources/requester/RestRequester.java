@@ -63,7 +63,7 @@ public class RestRequester extends AbstractRequester implements Requester {
     }
 
     @Override
-    public Result<Void> deleteUserSheets(URI serverURI,String userId) {
+    public Result<Void> deleteUserSheets(URI serverURI, String userId) {
         return defaultRetry(() -> {
             WebTarget target = client.target(serverURI).path(RestSpreadsheets.PATH);
             Response r = target.path("deleteUserSheets").path(userId).request()

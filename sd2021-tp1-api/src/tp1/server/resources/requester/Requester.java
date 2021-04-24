@@ -11,5 +11,5 @@ public interface Requester {
 
     Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range);
 
-    Result<Void> deleteUserSheets(URI serverURI,String userId);
+    Result<Void> deleteUserSheets(URI serverURI, String userId);
 }

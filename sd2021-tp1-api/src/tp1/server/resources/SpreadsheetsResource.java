@@ -17,9 +17,7 @@ import tp1.util.CellRange;
 import tp1.util.InvalidCellIdException;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -230,7 +228,6 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range) {
-        System.out.println(sheetId + " " + userEmail + " " + range);
         Spreadsheet sheet = spreadsheets.get(sheetId);
         if (sheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
@@ -295,7 +292,6 @@ public class SpreadsheetsResource implements Spreadsheets {
             @Override
             public String[][] getRangeValues(String sheetURL, String range) {
                 // get remote range values
-                System.out.println(sheetURL + userEmail + range);
                 Pair<String[][], Long> cells = rangeCache.get(sheetURL + range);
                 if (cells != null && cells.getRight() + CACHE_VALID_TTL > System.currentTimeMillis()) {
                     return cells.getLeft();

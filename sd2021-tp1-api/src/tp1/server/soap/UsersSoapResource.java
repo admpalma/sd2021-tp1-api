@@ -10,12 +10,12 @@ import tp1.server.resources.UsersResource;
 
 import java.util.List;
 
-@WebService(serviceName=SoapUsers.NAME, targetNamespace=SoapUsers.NAMESPACE, endpointInterface=SoapUsers.INTERFACE)
+@WebService(serviceName = SoapUsers.NAME, targetNamespace = SoapUsers.NAMESPACE, endpointInterface = SoapUsers.INTERFACE)
 public class UsersSoapResource implements SoapUsers {
 
     private final UsersResource usersResource;
 
-    public UsersSoapResource(Discovery discovery,String domain) {
+    public UsersSoapResource(Discovery discovery, String domain) {
         usersResource = new UsersResource(discovery, domain);
     }
 

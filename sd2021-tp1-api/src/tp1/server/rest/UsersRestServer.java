@@ -26,7 +26,7 @@ public class UsersRestServer {
             String serverURI = String.format("http://%s:%s/rest", ip, PORT);
 
             ResourceConfig config = new ResourceConfig();
-            config.register(new UsersRestResource(new Discovery(SERVICE, serverURI, args[0]),args[0]));
+            config.register(new UsersRestResource(new Discovery(SERVICE, serverURI, args[0]), args[0]));
 
             JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config);
 
