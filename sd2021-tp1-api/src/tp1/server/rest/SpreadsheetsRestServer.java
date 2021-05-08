@@ -3,7 +3,10 @@ package tp1.server.rest;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import tp1.server.resources.Discovery;
+import tp1.util.InsecureHostnameVerifier;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.logging.Logger;
@@ -23,12 +26,15 @@ public class SpreadsheetsRestServer {
     public static void main(String[] args) {
         try {
             String ip = InetAddress.getLocalHost().getHostAddress();
-            String serverURI = String.format("http://%s:%s/rest", ip, PORT);
+            //This allows client code executed by this server to ignore hostname verification
+            HttpsURLConnection.setDefaultHostnameVerifier(new InsecureHostnameVerifier());
+
+            String serverURI = String.format("https://%s:%s/rest", ip, PORT);
 
             ResourceConfig config = new ResourceConfig();
             config.register(new SpreadsheetsRestResource(args[0], serverURI, new Discovery(SERVICE, serverURI, args[0])));
 
-            JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config);
+            JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config, SSLContext.getDefault());
 
             Log.info(String.format("%s Server ready @ %s\n", SERVICE, serverURI));
 
