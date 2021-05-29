@@ -9,7 +9,7 @@ public interface Requester {
 
     Result<User> requestUser(URI serverURI, String userId, String password);
 
-    Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range);
+    Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range,String serverSecret);
 
-    Result<Void> deleteUserSheets(URI serverURI, String userId);
+    Result<Void> deleteUserSheets(URI serverURI, String userId,String serverSecret);
 }

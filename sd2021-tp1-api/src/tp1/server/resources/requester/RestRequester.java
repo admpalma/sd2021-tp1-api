@@ -45,12 +45,14 @@ public class RestRequester extends AbstractRequester implements Requester {
     }
 
     @Override
-    public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range) {
+    public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range,String serverSecret) {
         return defaultRetry(() -> {
             WebTarget target = client.target(sheetURL);
             Response r = target.path("rangeValues")
                     .queryParam("userEmail", userEmail)
-                    .queryParam("range", range).request()
+                    .queryParam("range", range)
+                    .queryParam("serverSecret", serverSecret)
+                    .request()
                     .accept(MediaType.APPLICATION_JSON)
                     .get();
 
@@ -63,10 +65,12 @@ public class RestRequester extends AbstractRequester implements Requester {
     }
 
     @Override
-    public Result<Void> deleteUserSheets(URI serverURI, String userId) {
+    public Result<Void> deleteUserSheets(URI serverURI, String userId,String serverSecret) {
         return defaultRetry(() -> {
             WebTarget target = client.target(serverURI).path(RestSpreadsheets.PATH);
-            Response r = target.path("deleteUserSheets").path(userId).request()
+            Response r = target.path("deleteUserSheets").path(userId)
+                    .queryParam("serverSecret",serverSecret)
+                    .request()
                     .accept(MediaType.APPLICATION_JSON)
                     .delete();
             if (r.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {

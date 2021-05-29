@@ -50,7 +50,7 @@ public class SoapRequester extends AbstractRequester implements Requester {
     }
 
     @Override
-    public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range) {
+    public Result<String[][]> requestSpreadsheetRangeValues(String sheetURL, String userEmail, String range,String serverSecret) {
         return defaultRetry(() -> {
             try {
                 int idSplitIndex = sheetURL.lastIndexOf('/');
@@ -61,7 +61,7 @@ public class SoapRequester extends AbstractRequester implements Requester {
                 ((BindingProvider) spreadsheets).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
                 ((BindingProvider) spreadsheets).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
 
-                String[][] spreadsheetRangeValues = spreadsheets.getSpreadsheetRangeValues(sheetURL.substring(idSplitIndex + 1), userEmail, range);
+                String[][] spreadsheetRangeValues = spreadsheets.getSpreadsheetRangeValues(sheetURL.substring(idSplitIndex + 1), userEmail, range,serverSecret);
                 return Result.ok(spreadsheetRangeValues);
             } catch (SheetsException e) {
                 return Result.error(Result.ErrorCode.valueOf(e.getMessage()));
@@ -72,7 +72,7 @@ public class SoapRequester extends AbstractRequester implements Requester {
     }
 
     @Override
-    public Result<Void> deleteUserSheets(URI serverURI, String userId) {
+    public Result<Void> deleteUserSheets(URI serverURI, String userId,String serverSecret) {
         return defaultRetry(() -> {
             try {
                 Service service = Service.create(new URL(serverURI + SPREADSHEETS_WSDL), spreadsheetsQName);
@@ -80,7 +80,7 @@ public class SoapRequester extends AbstractRequester implements Requester {
                 //Set timeouts for executing operations
                 ((BindingProvider) sheets).getRequestContext().put(BindingProviderProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT);
                 ((BindingProvider) sheets).getRequestContext().put(BindingProviderProperties.REQUEST_TIMEOUT, REPLY_TIMEOUT);
-                sheets.deleteUserSheets(userId);
+                sheets.deleteUserSheets(userId,serverSecret);
                 return Result.ok();
             } catch (SheetsException e) {
                 return Result.error(Result.ErrorCode.valueOf(e.getMessage()));

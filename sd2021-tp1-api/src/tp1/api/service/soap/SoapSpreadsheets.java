@@ -102,7 +102,7 @@ public interface SoapSpreadsheets {
      * @throws SheetsException otherwise
      */
     @WebMethod
-    String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range) throws SheetsException;
+    String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range,String serverSecret) throws SheetsException;
 
     /**
      * Deletes a user's spreadsheets. Only a server can call this method. :^) Hm yes secure
@@ -111,5 +111,5 @@ public interface SoapSpreadsheets {
      * @throws SheetsException otherwise
      */
     @WebMethod
-    void deleteUserSheets(String userId) throws SheetsException;
+    void deleteUserSheets(String userId,String serverSecret) throws SheetsException;
 }

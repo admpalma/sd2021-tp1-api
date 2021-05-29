@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 public class UsersResource implements Users {
 
+    protected static final String serverSecret = "user_Jf>h;.gsbyq8)6k1KD|@%~";
     private final ConcurrentMap<String, User> users;
     private final Discovery discovery;
     private final RestRequester restRequester;
@@ -158,7 +159,7 @@ public class UsersResource implements Users {
             users.remove(userId);
         }
         URI uri = discovery.knownUrisOf(domain + ":sheets")[0];
-        requesterFromURI(uri).deleteUserSheets(uri, userId);
+        requesterFromURI(uri).deleteUserSheets(uri, userId,serverSecret);
 
         return Result.ok(user);
     }

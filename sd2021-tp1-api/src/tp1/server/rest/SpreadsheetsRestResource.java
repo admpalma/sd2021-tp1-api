@@ -55,8 +55,8 @@ public class SpreadsheetsRestResource implements RestSpreadsheets {
     }
 
     @Override
-    public String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range) {
-        return extractResult(spreadsheetsResource.getSpreadsheetRangeValues(sheetId, userEmail, range));
+    public String[][] getSpreadsheetRangeValues(String sheetId, String userEmail, String range,String serverSecret) {
+        return extractResult(spreadsheetsResource.getSpreadsheetRangeValues(sheetId, userEmail, range,serverSecret));
     }
 
     @Override
@@ -75,7 +75,7 @@ public class SpreadsheetsRestResource implements RestSpreadsheets {
     }
 
     @Override
-    public void deleteUserSheets(String userId) {
-        extractResult(spreadsheetsResource.deleteUserSheets(userId));
+    public void deleteUserSheets(String userId,String serverSecret) {
+        extractResult(spreadsheetsResource.deleteUserSheets(userId,serverSecret));
     }
 }

@@ -90,7 +90,7 @@ public interface RestSpreadsheets {
     @Path("/{sheetId}/rangeValues")
     @Produces(MediaType.APPLICATION_JSON)
     String[][] getSpreadsheetRangeValues(@PathParam("sheetId") String sheetId,
-                                         @QueryParam("userEmail") String userEmail, @QueryParam("range") String range);
+                                         @QueryParam("userEmail") String userEmail, @QueryParam("range") String range,@QueryParam("serverSecret")String serverSecret);
 
 
     /**
@@ -160,5 +160,5 @@ public interface RestSpreadsheets {
      */
     @DELETE
     @Path("/deleteUserSheets/{userId}")
-    void deleteUserSheets(@PathParam("userId") String userId);
+    void deleteUserSheets(@PathParam("userId") String userId,@QueryParam("serverSecret") String serverSecret);
 }

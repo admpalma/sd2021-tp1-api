@@ -22,9 +22,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SpreadsheetsResource implements Spreadsheets {
+
+    protected static final String serverSecret = "sheet_%|WRDLdwA4Bp_/EsUw%oj9";
 
     URI uri;
     private final static int CACHE_FAIL_TTL = 60000;
@@ -227,7 +230,11 @@ public class SpreadsheetsResource implements Spreadsheets {
     }
 
     @Override
-    public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range) {
+    public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range,String serverSecret) {
+        if(!SpreadsheetsResource.serverSecret.equals(serverSecret)){
+            Log.severe("Wrong server secret on getSpreadsheetRangeValues");
+            return Result.error(Result.ErrorCode.FORBIDDEN);
+        }
         Spreadsheet sheet = spreadsheets.get(sheetId);
         if (sheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
@@ -255,7 +262,11 @@ public class SpreadsheetsResource implements Spreadsheets {
     }
 
     @Override
-    public Result<Void> deleteUserSheets(String userId) {
+    public Result<Void> deleteUserSheets(String userId, String serverSecret) {
+        if (!UsersResource.serverSecret.equals(serverSecret)){
+            Log.severe("Wrong server secret on delUserSheets");
+            return Result.error(Result.ErrorCode.FORBIDDEN);
+        }
         if (spreadsheets.entrySet().removeIf(sheetIdSpreadsheetEntry -> sheetIdSpreadsheetEntry.getValue().getOwner().equals(userId))) {
             spreadsheetValues.entrySet().removeIf(sheetValueEntry -> sheetValueEntry.getKey().getOwner().equals(userId));
             return Result.ok();
@@ -298,7 +309,7 @@ public class SpreadsheetsResource implements Spreadsheets {
                 }
 
                 Result<String[][]> rangeValuesResult = requesterFromURI(sheetURL)
-                        .requestSpreadsheetRangeValues(sheetURL, userEmail, range);
+                        .requestSpreadsheetRangeValues(sheetURL, userEmail, range,serverSecret);
 
                 if (!rangeValuesResult.isOK()) {
                     if (cells != null && cells.getRight() + CACHE_FAIL_TTL > System.currentTimeMillis()) {

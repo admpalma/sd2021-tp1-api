@@ -117,7 +117,7 @@ public interface Spreadsheets {
 	 * 404, if the spreadsheet or the user do not exist
 	 * 400, otherwise
 	 */
-	Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range);
+	Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range,String serverSecret);
 
-    Result<Void> deleteUserSheets(String userId);
+    Result<Void> deleteUserSheets(String userId,String serverSecret);
 }
