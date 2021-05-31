@@ -7,6 +7,7 @@ import tp1.api.User;
 import tp1.api.engine.AbstractSpreadsheet;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.util.Result;
+import tp1.api.service.util.SpreadsheetDatabase;
 import tp1.api.service.util.Spreadsheets;
 import tp1.impl.engine.SpreadsheetEngineImpl;
 import tp1.server.resources.requester.Requester;
@@ -31,7 +32,7 @@ public class SpreadsheetsResource implements Spreadsheets {
     URI uri;
     private final static int CACHE_FAIL_TTL = 60000;
     private final static int CACHE_VALID_TTL = 200;
-    private final ConcurrentMap<String, Spreadsheet> spreadsheets;
+    private final SpreadsheetDatabase spreadsheets;
     private final ConcurrentMap<Spreadsheet, Pair<String[][], Long>> spreadsheetValues;
     private final ConcurrentMap<String, Pair<String[][], Long>> rangeCache;
     private final String ownUri;
@@ -44,7 +45,7 @@ public class SpreadsheetsResource implements Spreadsheets {
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
-        spreadsheets = new ConcurrentHashMap<>();
+        spreadsheets = new SpreadsheetHashMap();
         spreadsheetValues = new ConcurrentHashMap<>();
         rangeCache = new ConcurrentHashMap<>();
         this.discovery = discovery;
@@ -266,7 +267,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             Log.severe("Wrong server secret on delUserSheets");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
-        if (spreadsheets.entrySet().removeIf(sheetIdSpreadsheetEntry -> sheetIdSpreadsheetEntry.getValue().getOwner().equals(userId))) {
+        if (spreadsheets.removeUserSpreadsheets(userId)) {
             spreadsheetValues.entrySet().removeIf(sheetValueEntry -> sheetValueEntry.getKey().getOwner().equals(userId));
             return Result.ok();
         }

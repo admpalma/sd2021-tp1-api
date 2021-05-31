@@ -4,9 +4,9 @@ public class UploadFileArgs {
     final String path;
     final boolean autorename;
     final String mode;
-    final String mute;
+    final boolean mute;
 
-    public UploadFileArgs(String path, boolean autorename, String mode, String mute) {
+    public UploadFileArgs(String path, boolean autorename, String mode, boolean mute) {
         this.path = path;
         this.autorename = autorename;
         this.mode = mode;
