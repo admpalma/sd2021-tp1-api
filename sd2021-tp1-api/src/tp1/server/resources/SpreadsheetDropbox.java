@@ -221,7 +221,11 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         Thread[] t = new Thread[sheets.size()];
         for (int i = 0;i<t.length;i++) {
             int finalI = i;
-            t[i] = new Thread(() -> remove(sheets.get(finalI)));
+            t[i] = new Thread(() -> {
+                String[] pathParts = sheets.get(finalI).split("/");
+                String path = pathParts[pathParts.length-1];
+                remove(path);
+            });
             t[i].start();
         }
         for (Thread k:t){
@@ -234,6 +238,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         pathOnlyRequest(baseDir + "/users/" + userId, DELETE_FILE_URL);
         return sheets.size()!=0;
     }
+
 
     public Spreadsheet remove(String sheetId) {
         Spreadsheet s = get(sheetId);
