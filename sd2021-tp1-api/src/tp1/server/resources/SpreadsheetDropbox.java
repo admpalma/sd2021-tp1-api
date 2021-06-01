@@ -1,7 +1,6 @@
 package tp1.server.resources;
 
 
-import com.dropbox.core.DbxRequestConfig;
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
-import com.dropbox.core.v2.DbxClientV2;
 import tp1.api.service.util.SpreadsheetDatabase;
 import tp1.server.resources.dropbox.*;
 
@@ -73,10 +71,10 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
     }
 
     private void deleteFolder(String folder) {
-        pathOnlyRequest(folder, DELETE_FILE_URL);
+        pathRequest(folder, DELETE_FILE_URL);
     }
 
-    private void pathOnlyRequest(String path, String requestURL) {
+    private void pathRequest(String path, String requestURL) {
         OAuthRequest createFolder = new OAuthRequest(Verb.POST, requestURL);
         createFolder.addHeader("Content-Type",JSON_CONTENT_TYPE);
         createFolder.setPayload(json.toJson(new PathArg(path)));
@@ -85,7 +83,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
     }
 
     private void createFolder(String folder) {
-        pathOnlyRequest(folder, CREATE_FOLDER_URL);
+        pathRequest(folder, CREATE_FOLDER_URL);
     }
 
     @Override
@@ -235,7 +233,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
                 e.printStackTrace();
             }
         }
-        pathOnlyRequest(baseDir + "/users/" + userId, DELETE_FILE_URL);
+        pathRequest(baseDir + "/users/" + userId, DELETE_FILE_URL);
         return sheets.size()!=0;
     }
 
@@ -243,8 +241,8 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
     public Spreadsheet remove(String sheetId) {
         Spreadsheet s = get(sheetId);
         if (s!=null) {
-            pathOnlyRequest(baseDir+"/sheets/" + sheetId, DELETE_FILE_URL);
-            pathOnlyRequest(baseDir+"/users/" + s.getOwner(), DELETE_FILE_URL);
+            pathRequest(baseDir+"/sheets/" + sheetId, DELETE_FILE_URL);
+            pathRequest(baseDir+"/users/" + s.getOwner(), DELETE_FILE_URL);
         }
         return s;
     }
