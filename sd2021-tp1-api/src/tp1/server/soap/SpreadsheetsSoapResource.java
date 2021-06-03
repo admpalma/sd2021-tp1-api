@@ -5,6 +5,7 @@ import tp1.api.Spreadsheet;
 import tp1.api.service.soap.SheetsException;
 import tp1.api.service.soap.SoapSpreadsheets;
 import tp1.api.service.util.Result;
+import tp1.api.service.util.SpreadsheetDatabase;
 import tp1.server.resources.Discovery;
 import tp1.server.resources.SpreadsheetsResource;
 
@@ -13,8 +14,8 @@ public class SpreadsheetsSoapResource implements SoapSpreadsheets {
 
     private final SpreadsheetsResource spreadsheetsResource;
 
-    public SpreadsheetsSoapResource(String domain, String ownUri, Discovery discovery) {
-        spreadsheetsResource = new SpreadsheetsResource(domain, ownUri, discovery);
+    public SpreadsheetsSoapResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
+        spreadsheetsResource = new SpreadsheetsResource(domain, ownUri, discovery,sdb);
     }
 
     private <T> T extractResult(Result<T> result) throws SheetsException {

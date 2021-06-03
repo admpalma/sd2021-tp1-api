@@ -53,7 +53,8 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         s.setOwner("despacito");
         s.setSheetId("kek");
         map.put("kek",s);
-        map.removeUserSpreadsheets("despacito");
+        s.setColumns(10);
+        map.put("kek",s);
 
 //        map.put("haha",new Spreadsheet());
 //        Spreadsheet s = map.get("hahe");
@@ -88,7 +89,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
 
     @Override
     public boolean containsKey(String key) {
-        return Objects.requireNonNull(listDirectory(baseDir + "/sheets/" + key)).contains(key);
+        return Objects.requireNonNull(listDirectory("sheets")).contains(key);
     }
 
     private List<String> listDirectory(String path){
@@ -119,7 +120,8 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
                 ListFolderReturn reply = json.fromJson(r.getBody(), ListFolderReturn.class);
 
                 for(ListFolderReturn.FolderEntry e: reply.getEntries()) {
-                    directoryContents.add(e.toString());
+                    String[] nodes = e.toString().split("/");
+                    directoryContents.add(nodes[nodes.length-1]);
                 }
 
                 if(reply.has_more()) {
@@ -161,6 +163,8 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
             throw new RuntimeException("Dropbox query failed with null");
         if (r.getCode()!=200 && r.getCode()!=409)
             throw new RuntimeException("Dropbox query failed with "+r.getCode());
+        if (r.getCode()==409)
+            return null;
 
         return fileText;
     }
@@ -175,7 +179,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         OAuthRequest request = new OAuthRequest(Verb.POST, UPLOAD_FILE_URL);
         request.addHeader("Content-Type",OCTET_CONTENT_TYPE);
         request.addHeader("Dropbox-API-Arg",json.toJson(
-                new GetFileArgs(baseDir + "/" +path)
+                new UploadFileArgs(baseDir + "/" +path,false,"overwrite",true)
         ));
         request.setPayload(json.toJson(file));
 
@@ -220,9 +224,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         for (int i = 0;i<t.length;i++) {
             int finalI = i;
             t[i] = new Thread(() -> {
-                String[] pathParts = sheets.get(finalI).split("/");
-                String path = pathParts[pathParts.length-1];
-                remove(path);
+                remove(sheets.get(finalI));
             });
             t[i].start();
         }
@@ -248,18 +250,12 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
     }
 
     @Override
-    public Spreadsheet putIfAbsent(String keyObj, Spreadsheet value) {
-//        String key = (String) keyObj;
-//
-//        List<LockFileArg> file = new LinkedList();
-//        file.add(new LockFileArg(baseDir+"/"+key));
-//        try {
-//            List<LockFileResultEntry> s = client.files().getFileLockBatch(file).getEntries();
-//            System.out.println();
-//        } catch (DbxException e) {
-//            e.printStackTrace();
-//        }
-        return null;
+    public Spreadsheet putIfAbsent(String key, Spreadsheet value) {
+        Spreadsheet s = get(key);
+        if (s == null){
+            put(key,value);
+        }
+        return s;
     }
 
 }

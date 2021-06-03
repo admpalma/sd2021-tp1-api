@@ -44,8 +44,8 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
-    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery) {
-        spreadsheets = new SpreadsheetHashMap();
+    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery,SpreadsheetDatabase spreadsheetDatabase) {
+        spreadsheets = spreadsheetDatabase;
         spreadsheetValues = new ConcurrentHashMap<>();
         rangeCache = new ConcurrentHashMap<>();
         this.discovery = discovery;
@@ -76,7 +76,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
         sheet.setSheetId(id);
         sheet.setSheetURL(ownUri + RestSpreadsheets.PATH + "/" + id);
-        spreadsheets.putIfAbsent(id, sheet);
+        spreadsheets.put(id, sheet);
 
         return Result.ok(id);
     }
@@ -116,9 +116,10 @@ public class SpreadsheetsResource implements Spreadsheets {
         User u = userResult.value();
 
         synchronized (sheet) {
-            if (!spreadsheets.containsKey(sheetId)) {
-                return Result.error(Result.ErrorCode.NOT_FOUND);
-            }
+            // Shouldn't be needed?
+//            if (!spreadsheets.containsKey(sheetId)) {
+//                return Result.error(Result.ErrorCode.NOT_FOUND);
+//            }
             Set<String> sharedWith = sheet.getSharedWith();
             if (!sheet.getOwner().equals(u.getUserId()) && (sharedWith == null || !sharedWith.contains(u.getEmail()))) {
                 return Result.error(Result.ErrorCode.FORBIDDEN);
@@ -138,9 +139,10 @@ public class SpreadsheetsResource implements Spreadsheets {
             return Result.error(userResult.error());
         }
         synchronized (sheet) {
-            if (!spreadsheets.containsKey(sheetId)) {
-                return Result.error(Result.ErrorCode.NOT_FOUND);
-            }
+            // Shouldnt be needed
+//            if (sheetId == null) {
+//                return Result.error(Result.ErrorCode.NOT_FOUND);
+//            }
             Set<String> shared = sheet.getSharedWith();
             if (shared == null) {
                 shared = new HashSet<>();
@@ -148,6 +150,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             if (!shared.add(userId))
                 return Result.error(Result.ErrorCode.CONFLICT);
             sheet.setSharedWith(shared);
+            spreadsheets.put(sheetId,sheet);
         }
         return Result.ok();
     }
@@ -171,6 +174,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             if (shared == null || !shared.remove(userId))
                 return Result.error(Result.ErrorCode.NOT_FOUND);
             sheet.setSharedWith(shared);
+            spreadsheets.put(sheetId,sheet);
         }
         return Result.ok();
     }
@@ -200,6 +204,8 @@ public class SpreadsheetsResource implements Spreadsheets {
                 return Result.error(Result.ErrorCode.BAD_REQUEST);
             sheet.setCellRawValue(cell, rawValue);
             spreadsheetValues.remove(sheet);
+            // Needed for DropboxMap
+            spreadsheets.put(sheetId,sheet);
         }
         return Result.ok();
     }

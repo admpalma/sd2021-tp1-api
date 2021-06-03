@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.Response;
 import tp1.api.Spreadsheet;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.util.Result;
+import tp1.api.service.util.SpreadsheetDatabase;
 import tp1.server.resources.Discovery;
 import tp1.server.resources.SpreadsheetsResource;
 
@@ -19,8 +20,8 @@ public class SpreadsheetsRestResource implements RestSpreadsheets {
 
     private static Logger Log = Logger.getLogger(SpreadsheetsRestResource.class.getName());
 
-    public SpreadsheetsRestResource(String domain, String ownUri, Discovery discovery) {
-        spreadsheetsResource = new SpreadsheetsResource(domain, ownUri, discovery);
+    public SpreadsheetsRestResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
+        spreadsheetsResource = new SpreadsheetsResource(domain, ownUri, discovery,sdb);
     }
 
     private <T> T extractResult(Result<T> result) {
