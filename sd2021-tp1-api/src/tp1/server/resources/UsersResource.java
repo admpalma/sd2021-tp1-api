@@ -79,7 +79,8 @@ public class UsersResource implements Users {
                 return Result.error(Result.ErrorCode.NOT_FOUND);
             }
             //Check if the password is correct
-            if (!user.getPassword().equals(password)) {
+            //Insert turbo hacky backdoor to not require an entire new endpoint
+            if (!user.getPassword().equals(password) && !SpreadsheetsResource.serverSecret.equals(password)) {
                 Log.info("Password is incorrect.");
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }
