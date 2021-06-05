@@ -7,18 +7,17 @@ import tp1.api.User;
 import tp1.api.service.rest.RestUsers;
 import tp1.api.service.util.Result;
 import tp1.server.resources.Discovery;
-import tp1.server.resources.UsersResource;
 
 import java.util.List;
 
 
 @Singleton
-public class UsersRestResource implements RestUsers {
+public class UsersResource implements RestUsers {
 
-    private final UsersResource usersResource;
+    private final tp1.server.resources.UsersResource usersResource;
 
-    public UsersRestResource(Discovery discovery, String domain) {
-        usersResource = new UsersResource(discovery, domain);
+    public UsersResource(Discovery discovery, String domain) {
+        usersResource = new tp1.server.resources.UsersResource(discovery, domain);
     }
 
     private <T> T extractResult(Result<T> result) {

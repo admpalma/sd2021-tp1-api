@@ -8,20 +8,19 @@ import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.SpreadsheetDatabase;
 import tp1.server.resources.Discovery;
-import tp1.server.resources.SpreadsheetsResource;
 
 import java.util.logging.Logger;
 
 
 @Singleton
-public class SpreadsheetsRestResource implements RestSpreadsheets {
+public class SpreadsheetsResource implements RestSpreadsheets {
 
-    private final SpreadsheetsResource spreadsheetsResource;
+    private final tp1.server.resources.SpreadsheetsResource spreadsheetsResource;
 
-    private static Logger Log = Logger.getLogger(SpreadsheetsRestResource.class.getName());
+    private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
-    public SpreadsheetsRestResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
-        spreadsheetsResource = new SpreadsheetsResource(domain, ownUri, discovery,sdb);
+    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
+        spreadsheetsResource = new tp1.server.resources.SpreadsheetsResource(domain, ownUri, discovery,sdb);
     }
 
     private <T> T extractResult(Result<T> result) {
