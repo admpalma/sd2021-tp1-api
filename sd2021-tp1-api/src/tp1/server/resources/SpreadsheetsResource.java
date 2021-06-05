@@ -15,6 +15,7 @@ import tp1.server.resources.requester.RestRequester;
 import tp1.server.resources.requester.SoapRequester;
 import tp1.util.Cell;
 import tp1.util.CellRange;
+import tp1.util.GSheets;
 import tp1.util.InvalidCellIdException;
 
 import java.net.URI;
@@ -44,7 +45,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
-    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery,SpreadsheetDatabase spreadsheetDatabase) {
+    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase spreadsheetDatabase) {
         spreadsheets = spreadsheetDatabase;
         spreadsheetValues = new ConcurrentHashMap<>();
         rangeCache = new ConcurrentHashMap<>();
@@ -150,7 +151,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             if (!shared.add(userId))
                 return Result.error(Result.ErrorCode.CONFLICT);
             sheet.setSharedWith(shared);
-            spreadsheets.put(sheetId,sheet);
+            spreadsheets.put(sheetId, sheet);
         }
         return Result.ok();
     }
@@ -174,7 +175,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             if (shared == null || !shared.remove(userId))
                 return Result.error(Result.ErrorCode.NOT_FOUND);
             sheet.setSharedWith(shared);
-            spreadsheets.put(sheetId,sheet);
+            spreadsheets.put(sheetId, sheet);
         }
         return Result.ok();
     }
@@ -205,7 +206,7 @@ public class SpreadsheetsResource implements Spreadsheets {
             sheet.setCellRawValue(cell, rawValue);
             spreadsheetValues.remove(sheet);
             // Needed for DropboxMap
-            spreadsheets.put(sheetId,sheet);
+            spreadsheets.put(sheetId, sheet);
         }
         return Result.ok();
     }
@@ -236,8 +237,8 @@ public class SpreadsheetsResource implements Spreadsheets {
     }
 
     @Override
-    public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range,String serverSecret) {
-        if(!SpreadsheetsResource.serverSecret.equals(serverSecret)){
+    public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range, String serverSecret) {
+        if (!SpreadsheetsResource.serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on getSpreadsheetRangeValues");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
@@ -269,7 +270,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<Void> deleteUserSheets(String userId, String serverSecret) {
-        if (!UsersResource.serverSecret.equals(serverSecret)){
+        if (!UsersResource.serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on delUserSheets");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
@@ -313,9 +314,14 @@ public class SpreadsheetsResource implements Spreadsheets {
                 if (cells != null && cells.getRight() + CACHE_VALID_TTL > System.currentTimeMillis()) {
                     return cells.getLeft();
                 }
+                if (sheetURL.startsWith("https://sheets.googleapis.com/"))
+                    return GSheets.getSheetRange(
+                            sheetURL.split("https://sheets.googleapis.com/")[1],
+                            range
+                    );
 
                 Result<String[][]> rangeValuesResult = requesterFromURI(sheetURL)
-                        .requestSpreadsheetRangeValues(sheetURL, userEmail, range,serverSecret);
+                        .requestSpreadsheetRangeValues(sheetURL, userEmail, range, serverSecret);
 
                 if (!rangeValuesResult.isOK()) {
                     if (cells != null && cells.getRight() + CACHE_FAIL_TTL > System.currentTimeMillis()) {

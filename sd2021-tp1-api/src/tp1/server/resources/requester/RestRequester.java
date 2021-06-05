@@ -19,9 +19,7 @@ public class RestRequester extends AbstractRequester implements Requester {
     private final Client client;
 
     public RestRequester() {
-        client = ClientBuilder.newClient(new ClientConfig()
-                .property(ClientProperties.CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
-                .property(ClientProperties.READ_TIMEOUT, REPLY_TIMEOUT));
+        client = HTTPSClient.make();
     }
 
     @Override
