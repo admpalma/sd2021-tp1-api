@@ -10,11 +10,11 @@ import tp1.server.resources.Discovery;
 import tp1.server.resources.SpreadsheetsResource;
 
 @WebService(serviceName = SoapSpreadsheets.NAME, targetNamespace = SoapSpreadsheets.NAMESPACE, endpointInterface = SoapSpreadsheets.INTERFACE)
-public class SpreadsheetsSoapResource implements SoapSpreadsheets {
+public class SpreadsheetsWS implements SoapSpreadsheets {
 
     private final SpreadsheetsResource spreadsheetsResource;
 
-    public SpreadsheetsSoapResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
+    public SpreadsheetsWS(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
         spreadsheetsResource = new SpreadsheetsResource(domain, ownUri, discovery,sdb);
     }
 

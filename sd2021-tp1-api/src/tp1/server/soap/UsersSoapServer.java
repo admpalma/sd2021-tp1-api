@@ -1,56 +1,21 @@
 package tp1.server.soap;
 
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
-import jakarta.xml.ws.Endpoint;
 import tp1.server.resources.Discovery;
-import tp1.util.InsecureHostnameVerifier;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
-public class UsersSoapServer {
+public class UsersSoapServer extends AbstractSoapServer {
+
     private static final Logger Log = Logger.getLogger(UsersSoapServer.class.getName());
-
-    static {
-        System.setProperty("java.net.preferIPv4Stack", "true");
-        System.setProperty("java.util.logging.SimpleFormatter.format", "%4$s: %5$s\n");
-    }
-
-    public static final int PORT = 8080;
     public static final String SERVICE = "users";
     public static final String SOAP_USERS_PATH = "/soap/users";
 
     public static void main(String[] args) {
         try {
-            String ip = InetAddress.getLocalHost().getHostAddress();
-
-            //This allows client code executed by this server to ignore hostname verification
-            HttpsURLConnection.setDefaultHostnameVerifier(new InsecureHostnameVerifier());
-
-            String serverURI = String.format("https://%s:%s/soap", ip, PORT);
-
-            //Create an https configurator to define the SSL/TLS context
-            HttpsConfigurator configurator = new HttpsConfigurator(SSLContext.getDefault());
-
-            HttpsServer server = HttpsServer.create(new InetSocketAddress(ip, PORT), 0);
-
-            server.setHttpsConfigurator(configurator);
-
-            server.setExecutor(Executors.newCachedThreadPool());
-
-            Endpoint soapUsersEndpoint = Endpoint.create(new UsersSoapResource(new Discovery(SERVICE, serverURI, args[0]), args[0]));
-
-            soapUsersEndpoint.publish(server.createContext(SOAP_USERS_PATH));
-
-            server.start();
+            String domain = args[0];
+            String serverURI = initServer(URI -> new UsersWS(new Discovery(SERVICE, URI, domain), domain), SOAP_USERS_PATH);
 
             Log.info(String.format("%s Server ready @ %s\n", SERVICE, serverURI));
-
             //More code can be executed here...
         } catch (Exception e) {
             Log.severe(e.getMessage());
