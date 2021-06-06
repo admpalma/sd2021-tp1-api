@@ -153,6 +153,10 @@
             <artifactId>dropbox-core-sdk</artifactId>
             <version>4.0.0</version>
         </dependency>
+		<dependency>
+			<groupId>org.apache.zookeeper</groupId>
+			<artifactId>zookeeper</artifactId>
+		</dependency>
     </dependencies>
 	<dependencyManagement>
 		<dependencies>
@@ -242,6 +246,11 @@
 				<groupId>com.sun.xml.ws</groupId>
 				<artifactId>rt</artifactId>
 				<version>3.0.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.zookeeper</groupId>
+				<artifactId>zookeeper</artifactId>
+				<version>3.4.11</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

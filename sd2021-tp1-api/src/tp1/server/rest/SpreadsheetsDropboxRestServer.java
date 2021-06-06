@@ -19,7 +19,6 @@ public class SpreadsheetsDropboxRestServer extends AbstractRestServer {
                     new Discovery(SERVICE, URI, domain),
                     new SpreadsheetDropbox("/" + domain, "true".equals(args[1]))
             ));
-
             Log.info(String.format("%s Server ready @ %s\n", SERVICE, serverURI));
             //More code can be executed here...
         } catch (Exception e) {

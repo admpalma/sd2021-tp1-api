@@ -8,6 +8,7 @@ import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.SpreadsheetDatabase;
 import tp1.server.resources.Discovery;
+import tp1.server.resources.SpreadsheetsManager;
 
 import java.util.logging.Logger;
 
@@ -15,12 +16,12 @@ import java.util.logging.Logger;
 @Singleton
 public class SpreadsheetsResource implements RestSpreadsheets {
 
-    private final tp1.server.resources.SpreadsheetsResource spreadsheetsResource;
+    private final SpreadsheetsManager spreadsheetsResource;
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
     public SpreadsheetsResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
-        spreadsheetsResource = new tp1.server.resources.SpreadsheetsResource(domain, ownUri, discovery,sdb);
+        spreadsheetsResource = new SpreadsheetsManager(domain, ownUri, discovery,sdb);
     }
 
     private <T> T extractResult(Result<T> result) {

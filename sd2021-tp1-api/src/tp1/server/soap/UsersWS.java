@@ -6,17 +6,17 @@ import tp1.api.service.soap.SoapUsers;
 import tp1.api.service.soap.UsersException;
 import tp1.api.service.util.Result;
 import tp1.server.resources.Discovery;
-import tp1.server.resources.UsersResource;
+import tp1.server.resources.UsersManager;
 
 import java.util.List;
 
 @WebService(serviceName = SoapUsers.NAME, targetNamespace = SoapUsers.NAMESPACE, endpointInterface = SoapUsers.INTERFACE)
 public class UsersWS implements SoapUsers {
 
-    private final UsersResource usersResource;
+    private final UsersManager usersManager;
 
     public UsersWS(Discovery discovery, String domain) {
-        usersResource = new UsersResource(discovery, domain);
+        usersManager = new UsersManager(discovery, domain);
     }
 
     private <T> T extractResult(Result<T> result) throws UsersException {
@@ -29,30 +29,30 @@ public class UsersWS implements SoapUsers {
 
     @Override
     public String createUser(User user) throws UsersException {
-        return extractResult(usersResource.createUser(user));
+        return extractResult(usersManager.createUser(user));
     }
 
     @Override
     public User getUser(String userId, String password) throws UsersException {
-        return extractResult(usersResource.getUser(userId, password));
+        return extractResult(usersManager.getUser(userId, password));
     }
 
 
     @Override
     public User updateUser(String userId, String password, User user) throws UsersException {
-        return extractResult(usersResource.updateUser(userId, password, user));
+        return extractResult(usersManager.updateUser(userId, password, user));
     }
 
 
     @Override
     public User deleteUser(String userId, String password) throws UsersException {
-        return extractResult(usersResource.deleteUser(userId, password));
+        return extractResult(usersManager.deleteUser(userId, password));
     }
 
 
     @Override
     public List<User> searchUsers(String pattern) throws UsersException {
-        return extractResult(usersResource.searchUsers(pattern));
+        return extractResult(usersManager.searchUsers(pattern));
     }
 
 }

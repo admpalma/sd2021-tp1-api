@@ -14,7 +14,6 @@ public class SpreadsheetsRestServer extends AbstractRestServer {
         try {
             String domain = args[0];
             String serverURI = initServer(URI -> new SpreadsheetsResource(domain, URI, new Discovery(SERVICE, URI, domain), new SpreadsheetHashMap()));
-
             Log.info(String.format("%s Server ready @ %s\n", SERVICE, serverURI));
             //More code can be executed here...
         } catch (Exception e) {

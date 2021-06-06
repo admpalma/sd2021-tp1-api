@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class UsersResource implements Users {
+public class UsersManager implements Users {
 
     protected static final String serverSecret = "user_Jf>h;.gsbyq8)6k1KD|@%~";
     private final ConcurrentMap<String, User> users;
@@ -23,9 +23,9 @@ public class UsersResource implements Users {
     private final SoapRequester soapRequester;
     private final String domain;
 
-    private static final Logger Log = Logger.getLogger(UsersResource.class.getName());
+    private static final Logger Log = Logger.getLogger(UsersManager.class.getName());
 
-    public UsersResource(Discovery discovery, String domain) {
+    public UsersManager(Discovery discovery, String domain) {
         users = new ConcurrentHashMap<>();
         this.discovery = discovery;
         this.domain = domain;
@@ -80,7 +80,7 @@ public class UsersResource implements Users {
             }
             //Check if the password is correct
             //Insert turbo hacky backdoor to not require an entire new endpoint
-            if (!user.getPassword().equals(password) && !SpreadsheetsResource.serverSecret.equals(password)) {
+            if (!user.getPassword().equals(password) && !SpreadsheetsManager.serverSecret.equals(password)) {
                 Log.info("Password is incorrect.");
                 return Result.error(Result.ErrorCode.FORBIDDEN);
             }

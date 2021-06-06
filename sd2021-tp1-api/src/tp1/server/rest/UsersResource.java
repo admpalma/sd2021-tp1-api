@@ -7,6 +7,7 @@ import tp1.api.User;
 import tp1.api.service.rest.RestUsers;
 import tp1.api.service.util.Result;
 import tp1.server.resources.Discovery;
+import tp1.server.resources.UsersManager;
 
 import java.util.List;
 
@@ -14,10 +15,10 @@ import java.util.List;
 @Singleton
 public class UsersResource implements RestUsers {
 
-    private final tp1.server.resources.UsersResource usersResource;
+    private final UsersManager usersManager;
 
     public UsersResource(Discovery discovery, String domain) {
-        usersResource = new tp1.server.resources.UsersResource(discovery, domain);
+        usersManager = new UsersManager(discovery, domain);
     }
 
     private <T> T extractResult(Result<T> result) {
@@ -30,30 +31,30 @@ public class UsersResource implements RestUsers {
 
     @Override
     public String createUser(User user) {
-        return extractResult(usersResource.createUser(user));
+        return extractResult(usersManager.createUser(user));
     }
 
     @Override
     public User getUser(String userId, String password) {
-        return extractResult(usersResource.getUser(userId, password));
+        return extractResult(usersManager.getUser(userId, password));
     }
 
 
     @Override
     public User updateUser(String userId, String password, User user) {
-        return extractResult(usersResource.updateUser(userId, password, user));
+        return extractResult(usersManager.updateUser(userId, password, user));
     }
 
 
     @Override
     public User deleteUser(String userId, String password) {
-        return extractResult(usersResource.deleteUser(userId, password));
+        return extractResult(usersManager.deleteUser(userId, password));
     }
 
 
     @Override
     public List<User> searchUsers(String pattern) {
-        return extractResult(usersResource.searchUsers(pattern));
+        return extractResult(usersManager.searchUsers(pattern));
     }
 
 }

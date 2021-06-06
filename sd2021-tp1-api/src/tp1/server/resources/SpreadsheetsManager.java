@@ -26,9 +26,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public class SpreadsheetsResource implements Spreadsheets {
+public class SpreadsheetsManager implements Spreadsheets {
 
-    protected static final String serverSecret = "sheet_%|WRDLdwA4Bp_/EsUw%oj9";
+    public static final String serverSecret = "sheet_%|WRDLdwA4Bp_/EsUw%oj9";
 
     URI uri;
     private final static int CACHE_FAIL_TTL = 60000;
@@ -43,9 +43,9 @@ public class SpreadsheetsResource implements Spreadsheets {
     private final RestRequester restRequester;
     private final SoapRequester soapRequester;
 
-    private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
+    private static Logger Log = Logger.getLogger(SpreadsheetsManager.class.getName());
 
-    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase spreadsheetDatabase) {
+    public SpreadsheetsManager(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase spreadsheetDatabase) {
         spreadsheets = spreadsheetDatabase;
         spreadsheetValues = new ConcurrentHashMap<>();
         rangeCache = new ConcurrentHashMap<>();
@@ -69,9 +69,11 @@ public class SpreadsheetsResource implements Spreadsheets {
             return Result.error(Result.ErrorCode.BAD_REQUEST);
         }
 
-        Result<User> userResult = authenticateUser(sheet.getOwner(), password);
-        if (!userResult.isOK()) {
-            return Result.error(Result.ErrorCode.BAD_REQUEST);
+        if (!serverSecret.equals(password)) {
+            Result<User> userResult = authenticateUser(sheet.getOwner(), password);
+            if (!userResult.isOK()) {
+                return Result.error(Result.ErrorCode.BAD_REQUEST);
+            }
         }
         String id = String.valueOf(totalSpreadsheets.incrementAndGet());
 
@@ -90,14 +92,14 @@ public class SpreadsheetsResource implements Spreadsheets {
         }
 
         synchronized (sheet) {
-            Result<User> userResult = authenticateUser(sheet.getOwner(), password);
-
-            if (!userResult.isOK()) {
-                return Result.error(userResult.error());
-            } else {
-                spreadsheets.remove(sheet.getSheetId());
-                spreadsheetValues.remove(sheet);
+            if (!serverSecret.equals(password)) {
+                Result<User> userResult = authenticateUser(sheet.getOwner(), password);
+                if (!userResult.isOK()) {
+                    return Result.error(userResult.error());
+                }
             }
+            spreadsheets.remove(sheet.getSheetId());
+            spreadsheetValues.remove(sheet);
         }
         return Result.ok();
     }
@@ -135,9 +137,11 @@ public class SpreadsheetsResource implements Spreadsheets {
         if (sheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
-        Result<User> userResult = authenticateUser(sheet.getOwner(), password);
-        if (!userResult.isOK()) {
-            return Result.error(userResult.error());
+        if (!serverSecret.equals(password)) {
+            Result<User> userResult = authenticateUser(sheet.getOwner(), password);
+            if (!userResult.isOK()) {
+                return Result.error(userResult.error());
+            }
         }
         synchronized (sheet) {
             // Shouldnt be needed
@@ -162,9 +166,11 @@ public class SpreadsheetsResource implements Spreadsheets {
         if (sheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
-        Result<User> userResult = authenticateUser(sheet.getOwner(), password);
-        if (!userResult.isOK()) {
-            return Result.error(userResult.error());
+        if (!serverSecret.equals(password)) {
+            Result<User> userResult = authenticateUser(sheet.getOwner(), password);
+            if (!userResult.isOK()) {
+                return Result.error(userResult.error());
+            }
         }
 
         synchronized (sheet) {
@@ -186,9 +192,11 @@ public class SpreadsheetsResource implements Spreadsheets {
         if (sheet == null) {
             return Result.error(Result.ErrorCode.NOT_FOUND);
         }
-        Result<User> userResult = authenticateUser(userId, password);
-        if (!userResult.isOK()) {
-            return Result.error(userResult.error());
+        if (!serverSecret.equals(password)) {
+            Result<User> userResult = authenticateUser(userId, password);
+            if (!userResult.isOK()) {
+                return Result.error(userResult.error());
+            }
         }
         synchronized (sheet) {
             if (!spreadsheets.containsKey(sheetId)) {
@@ -238,7 +246,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range, String serverSecret) {
-        if (!SpreadsheetsResource.serverSecret.equals(serverSecret)) {
+        if (!SpreadsheetsManager.serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on getSpreadsheetRangeValues");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
@@ -270,7 +278,7 @@ public class SpreadsheetsResource implements Spreadsheets {
 
     @Override
     public Result<Void> deleteUserSheets(String userId, String serverSecret) {
-        if (!UsersResource.serverSecret.equals(serverSecret)) {
+        if (!UsersManager.serverSecret.equals(serverSecret) && !SpreadsheetsManager.serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on delUserSheets");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
