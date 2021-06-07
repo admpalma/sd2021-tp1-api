@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import tp1.api.Spreadsheet;
+import tp1.api.service.rest.RestRepSpreadsheets;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.util.Result;
 import tp1.api.service.util.Spreadsheets;
@@ -99,5 +100,15 @@ public class RestSpreadsheetsClient extends RestClient implements Spreadsheets {
     @Override
     public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range, String serverSecret) {
         throw new RuntimeException();
+    }
+
+    public Result<String[]> getCommands(Long version, String serverSecret) {
+        Response r = target
+                .queryParam("version", version)
+                .queryParam("serverSecret", serverSecret)
+                .request()
+                .get();
+        return super.responseContents(r, Response.Status.OK, new GenericType<>() {
+        });
     }
 }

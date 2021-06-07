@@ -22,14 +22,13 @@ public abstract class AbstractRestServer {
     public static final int PORT = 8080;
     public static final String HTTPS_S_S_REST = "https://%s:%s/rest";
 
-    protected static String initServer(Function<String, Object> resource) throws NoSuchAlgorithmException, UnknownHostException {
+    protected static String initServer(Function<String, ResourceConfig> function) throws NoSuchAlgorithmException, UnknownHostException {
         String ip = InetAddress.getLocalHost().getHostAddress();
         String serverURI = String.format(HTTPS_S_S_REST, ip, PORT);
         //This allows client code executed by this server to ignore hostname verification
         HttpsURLConnection.setDefaultHostnameVerifier(new InsecureHostnameVerifier());
 
-        ResourceConfig config = new ResourceConfig();
-        config.register(resource.apply(serverURI));
+        ResourceConfig config = function.apply(serverURI);
 
         JdkHttpServerFactory.createHttpServer(URI.create(serverURI), config, SSLContext.getDefault());
         return serverURI;
