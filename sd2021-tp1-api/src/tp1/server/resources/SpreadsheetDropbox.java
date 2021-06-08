@@ -26,6 +26,7 @@ import tp1.server.resources.dropbox.*;
 
 public class SpreadsheetDropbox implements SpreadsheetDatabase {
     private static final int MAX_RETRIES = 5;
+    private static final String RETRY_AFTER_HEADER = "Retry-After";
 
     //    private static final String CREATE_FOLDER_URL = "https://api.dropboxapi.com/2/files/create_folder_v2";
     private static final String UPLOAD_FILE_URL = "https://content.dropboxapi.com/2/files/upload";
@@ -188,24 +189,35 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         service.signRequest(accessTokenStr, request);
         String body = null;
 
+        for (int i = 0; i < MAX_RETRIES; i++) {
 
-        Response r = null;
-        try {
-            r = service.execute(request);
-            body = r.getBody();
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-        if (r == null)
-            throw new RuntimeException("Dropbox query failed with null");
-        if (r.getCode() == 409)
-            return null;
-        if (r.getCode() != 200) {
+            Response r;
             try {
-                throw new RuntimeException("Dropbox query failed with " + r.getCode() + "\n" + r.getBody());
-            } catch (IOException e) {
-                e.printStackTrace();
+                r = service.execute(request);
+                body = r.getBody();
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                continue;
             }
+
+            if (r.getCode() == jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
+                int retry_after = Integer.parseInt(r.getHeader(RETRY_AFTER_HEADER));
+                try {
+                    Thread.sleep(retry_after* 1000L);
+                } catch (InterruptedException ignored) {
+                }
+                continue;
+            }
+
+            if (r.getCode() == 409)
+                return null;
+            if (r.getCode() != 200) {
+                try {
+                    throw new RuntimeException("Dropbox query failed with " + r.getCode() + "\n" + r.getBody());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            break;
         }
         return body;
     }
@@ -218,7 +230,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
         if (s == null)
             s = get(key);
 
-        // Could be replaced by a request queue maybe?
+        // Could be replaced by a request queue + cache with validation to have very speedy requests
         Thread a = new Thread(() -> uploadFile("sheets/" + key, value));
         Thread b = new Thread(() -> uploadFile("users/" + value.getOwner() + "/" + value.getSheetId(), ""));
         a.start();
