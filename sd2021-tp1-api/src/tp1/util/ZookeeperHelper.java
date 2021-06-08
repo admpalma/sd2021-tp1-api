@@ -4,6 +4,7 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.Watcher.Event.EventType;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 public class ZookeeperHelper {
@@ -16,6 +17,7 @@ public class ZookeeperHelper {
     private final String root;
     private final String ownPath;
     private String watchedPath;
+    private Watcher watcher;
 
 
     public ZookeeperHelper(String hostPort, String domain, Leader leader, String serverURI) throws IOException {
@@ -32,10 +34,11 @@ public class ZookeeperHelper {
         System.out.println("wtf matem-me");
         try {
             ownPath = zk.create(root + CHILD, serverURI.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-            leader.setUrl(new String(zk.getData(root, updateLeaderOnChange(), null)));
-            for (int i = 0; i < 10; i++) {
-                System.out.println(new String(zk.getData(root, updateLeaderOnChange(), null)));
-            }
+//            leader.setUrl(new String(zk.getData(root, updateLeaderOnChange(), null)));
+//            for (int i = 0; i < 10; i++) {
+//                System.out.println(new String(zk.getData(root, updateLeaderOnChange(), null)));
+//            }
+            updateLeaderOnChange().process(null);
         } catch (KeeperException | InterruptedException e) {
             e.printStackTrace();
             throw new IllegalStateException(e);
@@ -45,13 +48,24 @@ public class ZookeeperHelper {
     }
 
     private Watcher updateLeaderOnChange() {
-        return event -> {
-            System.out.println("elect me sdfgopij");
-            System.out.println(event.getType());
+        System.out.println("opijdfsgiopjdfgsiopjfdgsoijpdfgsopijdfgsopijudfghsijopdfgsoijpdgsfijopdfsgijopdfgsijopdsfgs");
+        if (watcher == null) {
+            watcher = event -> {
+                System.out.println("elect me sdfgopij");
+//                System.out.println(event.getType());
 //            if (EventType.NodeDataChanged.equals(event.getType())) {
                 try {
                     System.out.println(root);
-                    leader.setUrl(new String(zk.getData(root, updateLeaderOnChange(), null)));
+                    List<String> children = zk.getChildren(root, false);
+                    System.out.println(children);
+                    var previousPath = children.stream()
+                            .min(String::compareTo).get();
+
+                    System.out.println(root + "/" + previousPath);
+
+                    byte[] data = zk.getData(root + "/" + previousPath, updateLeaderOnChange(), null);
+                    System.out.println(Arrays.toString(data));
+                    leader.setUrl(new String(data));
                     System.out.println("a serio");
                 } catch (KeeperException | InterruptedException e) {
                     e.printStackTrace();
@@ -65,7 +79,10 @@ public class ZookeeperHelper {
                     throw e;
                 }
 //            }
-        };
+            };
+        }
+        System.out.println("4564264624624646");
+        return watcher;
     }
 
     private void updateWatch() {
@@ -76,12 +93,11 @@ public class ZookeeperHelper {
             System.out.println(children);
             var previousPath = children.stream()
                     .filter(s -> s.compareTo(ownPath) < 0)
-                    .max(String::compareTo)
-                    .map(s -> s.substring(s.lastIndexOf('/')));
+                    .max(String::compareTo);
             System.out.println("CHILDRENEFOISEFJSOIDF");
             System.out.println(children);
             if (previousPath.isPresent()) {
-                watchedPath = root + previousPath.get();
+                watchedPath = root + "/" + previousPath.get();
                 System.out.println(watchedPath);
                 zk.exists(watchedPath, event -> {
                     System.out.println("dont call us we call you");
