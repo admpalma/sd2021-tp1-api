@@ -179,6 +179,9 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
 
     @Override
     public Spreadsheet getSpreadsheet(Long version, String sheetId, String userId, String password) {
+        if (version == null) {
+            version = (long) 0;
+        }
         if (version > this.version.get()) {
             updateVersion(version, serverSecret);
             throw new WebApplicationException(Response.temporaryRedirect(
@@ -194,6 +197,9 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
 
     @Override
     public String[][] getSpreadsheetValues(Long version, String sheetId, String userId, String password) {
+        if (version == null) {
+            version = (long) 0;
+        }
         if (version > this.version.get()) {
             updateVersion(version, serverSecret);
             throw new WebApplicationException(Response.temporaryRedirect(
@@ -210,6 +216,9 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
 
     @Override
     public String[][] getSpreadsheetRangeValues(Long version, String sheetId, String userEmail, String range, String serverSecret) {
+        if (version == null) {
+            version = (long) 0;
+        }
         if (version > this.version.get()) {
             updateVersion(version, serverSecret);
             throw new WebApplicationException(Response.temporaryRedirect(
@@ -324,6 +333,9 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
 
     @Override
     public String[] getCommands(Long version, String serverSecret) {
+        if (version == null) {
+            version = (long) 0;
+        }
         if (cannotWrite(serverSecret)) {
             System.out.println("i wanna write FFS: " + url);
             System.out.println("serverSecret FFS: " + serverSecret);
