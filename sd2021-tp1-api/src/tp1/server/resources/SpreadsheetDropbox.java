@@ -40,12 +40,7 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
 
     private Gson json;
 
-    @SuppressWarnings("SpellCheckingInspection")
-    private static final String apiKey = "zlf67qhgv2h9w9v";
-    private static final String apiSecret = "hg677c1o66w9s2c";
-
-    @SuppressWarnings("SpellCheckingInspection")
-    private static final String accessTokenStr = "STBuIpf86CQAAAAAAAAAAYBVTmzLp2W70p-EVzoTJ8lr8u7Y_xAz0dv8CRKMomIn";
+    private final String accessTokenStr;
 
     private final String baseDir;
 
@@ -78,32 +73,9 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
      */
 
 
-    // Main for testing only, its very simple to do it this way
-    public static void main(String[] args) {
-        SpreadsheetDropbox map = new SpreadsheetDropbox("/test", true);
-        Spreadsheet s = new Spreadsheet();
-        s.setOwner("despacito");
-        s.setSheetId("kek");
-        map.put("kek", s);
-        s.setColumns(10);
-        map.put("kek", s);
-        s = new Spreadsheet();
-        s.setOwner("despacito");
-        s.setSheetId("hue");
-        map.put("hue", s);
-        s.setColumns(10);
-        map.put("hue", s);
-        map.removeUserSpreadsheets("despacito");
-
-//        map.put("haha",new Spreadsheet());
-//        Spreadsheet s = map.get("hahe");
-//        System.out.println(map.containsKey("hahe"));
-//        System.out.println(map.remove("hahe"));
-    }
-
-    public SpreadsheetDropbox(String baseDir, boolean refresh) {
+    public SpreadsheetDropbox(String baseDir, boolean refresh, String apiKey,String apiSecret, String accessTokenStr) {
         json = new Gson();
-
+        this.accessTokenStr = accessTokenStr;
         cache = new ConcurrentHashMap<>();
         service = new ServiceBuilder(apiKey).apiSecret(apiSecret).build(DropboxApi20.INSTANCE);
         this.baseDir = baseDir;
