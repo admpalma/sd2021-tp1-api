@@ -4,6 +4,7 @@ import jakarta.inject.Singleton;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilderException;
 import tp1.api.Spreadsheet;
 import tp1.api.service.rest.RestRepSpreadsheets;
 import tp1.api.service.util.Result;
@@ -107,6 +108,7 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
     private boolean cannotWrite(String password) {
         System.out.println("i wanna write: " + url);
         System.out.println("password: " + password);
+        System.out.println("fml leader is: " + leader.getUrl());
         System.out.println(!isPrimary() && !serverSecret.equals(password));
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         for (int i = 0; i < 3; i++) {
@@ -141,11 +143,16 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
     @Override
     public String createSpreadsheet(Long version, Spreadsheet sheet, String password) {
         if (cannotWrite(password)) {
-            throw new WebApplicationException(Response.temporaryRedirect(
-                    UriBuilder.fromPath(leader.getUrl() + RestRepSpreadsheets.PATH)
-                            .queryParam(PASSWORD, password)
-                            .build(sheet))
-                    .build());
+            try {
+                throw new WebApplicationException(Response.temporaryRedirect(
+                        UriBuilder.fromPath(leader.getUrl() + RestRepSpreadsheets.PATH)
+                                .queryParam(PASSWORD, password)
+                                .build(sheet))
+                        .build());
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
         } else {
             String s = extractResult(spreadsheetsManager.createSpreadsheet(sheet, password));
             updateVersion(Command.createSpreadsheet, new String[]{password}, sheet);

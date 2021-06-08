@@ -4,6 +4,7 @@ import org.apache.zookeeper.*;
 import org.apache.zookeeper.Watcher.Event.EventType;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ZookeeperHelper {
 
@@ -24,52 +25,89 @@ public class ZookeeperHelper {
         zk = new ZooKeeper(hostPort, 3000, null);
         try {
             zk.create(root, serverURI.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            System.out.println("dosfigjiojçsdfgfoijdsfgijff VAI OPEN THE TCHEKA VAI AIN AIN E ISSO AI JUSTIN EI JUSTIN JUSTIN");
+            leader.setUrl(serverURI);
         } catch (KeeperException | InterruptedException ignored) {
         }
+        System.out.println("wtf matem-me");
         try {
-            leader.setUrl(serverURI);
             ownPath = zk.create(root + CHILD, serverURI.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-            zk.exists(root, updateLeaderOnChange(root, leader));
+            leader.setUrl(new String(zk.getData(root, updateLeaderOnChange(), null)));
+            for (int i = 0; i < 10; i++) {
+                System.out.println(new String(zk.getData(root, updateLeaderOnChange(), null)));
+            }
         } catch (KeeperException | InterruptedException e) {
+            e.printStackTrace();
             throw new IllegalStateException(e);
         }
-
+        System.out.println("BLYAAAAAAAAT");
         updateWatch();
     }
 
-    private Watcher updateLeaderOnChange(String root, Leader leader) {
+    private Watcher updateLeaderOnChange() {
         return event -> {
-            if (EventType.NodeDataChanged.equals(event.getType())) {
+            System.out.println("elect me sdfgopij");
+            System.out.println(event.getType());
+//            if (EventType.NodeDataChanged.equals(event.getType())) {
                 try {
-                    leader.setUrl(new String(zk.getData(root, updateLeaderOnChange(root, leader), null)));
+                    System.out.println(root);
+                    leader.setUrl(new String(zk.getData(root, updateLeaderOnChange(), null)));
+                    System.out.println("a serio");
                 } catch (KeeperException | InterruptedException e) {
+                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+                    System.out.println("isto e bue fixe");
                     throw new IllegalStateException(e);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+                    System.out.println("isto e ainda mais fixe");
+                    throw e;
                 }
-            }
+//            }
         };
     }
 
     private void updateWatch() {
         try {
-            var previousPath = zk.getChildren(root, false).stream()
+            System.out.println("caralho");
+            List<String> children = zk.getChildren(root, false);
+            System.out.println("CH324234234234234234234234234F");
+            System.out.println(children);
+            var previousPath = children.stream()
                     .filter(s -> s.compareTo(ownPath) < 0)
                     .max(String::compareTo)
                     .map(s -> s.substring(s.lastIndexOf('/')));
-
+            System.out.println("CHILDRENEFOISEFJSOIDF");
+            System.out.println(children);
             if (previousPath.isPresent()) {
                 watchedPath = root + previousPath.get();
+                System.out.println(watchedPath);
                 zk.exists(watchedPath, event -> {
-                    if (EventType.NodeDeleted.equals(event.getType())) {
+                    System.out.println("dont call us we call you");
+                    System.out.println(event.getType());
+                    System.out.println(event.getPath());
+                    //if (EventType.NodeDeleted == event.getType()) {
                         updateWatch();
-                    }
+                    System.out.println("fds");
+                    //}
                 });
-            } else {
-                //TODO im leader
-                zk.setData(root, serverURI.getBytes(), -1);
-                leader.setUrl(serverURI);
             }
+//            else {
+//                //TODO im leader
+//                zk.setData(root, serverURI.getBytes(), -1);
+//                leader.setUrl(serverURI);
+//            }
         } catch (KeeperException | InterruptedException e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+            System.out.println("...");
             throw new IllegalStateException(e);
+        } catch (Exception fml) {
+            fml.printStackTrace();
+            System.out.println(fml.getMessage());
+            System.out.println("idk");
+            throw fml;
         }
     }
 
