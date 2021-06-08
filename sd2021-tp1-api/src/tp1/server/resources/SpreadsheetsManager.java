@@ -31,8 +31,7 @@ public class SpreadsheetsManager implements Spreadsheets {
     public static final String serverSecret = "sheet_%|WRDLdwA4Bp_/EsUw%oj9";
 
     URI uri;
-    private final static int CACHE_FAIL_TTL = 60000;
-    private final static int CACHE_VALID_TTL = 200;
+    private final static int CACHE_VALID_TTL = 20000;
     private final SpreadsheetDatabase spreadsheets;
     private final ConcurrentMap<Spreadsheet, Pair<String[][], Long>> spreadsheetValues;
     private final ConcurrentMap<String, Pair<String[][], Long>> rangeCache;
@@ -332,10 +331,7 @@ public class SpreadsheetsManager implements Spreadsheets {
                         .requestSpreadsheetRangeValues(sheetURL, userEmail, range, serverSecret);
 
                 if (!rangeValuesResult.isOK()) {
-                    if (cells != null && cells.getRight() + CACHE_FAIL_TTL > System.currentTimeMillis()) {
-                        return cells.getLeft();
-                    }
-                    return null;
+                    return cells.getLeft();
                 }
                 rangeCache.put(sheetURL + range, new ImmutablePair<>(rangeValuesResult.value(), System.currentTimeMillis()));
                 return rangeValuesResult.value();
