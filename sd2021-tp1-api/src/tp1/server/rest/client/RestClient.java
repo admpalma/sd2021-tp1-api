@@ -49,8 +49,6 @@ abstract class RestClient extends RetryClient {
     protected <T> Result<T> verifyResponse(Response r, Status expected) {
         try (r) {
             StatusType status = r.getStatusInfo();
-            System.out.println("i should be ok ffs: " + status);
-            System.out.println("pls equal: " + expected);
             if (status.equals(expected))
                 return ok();
             else

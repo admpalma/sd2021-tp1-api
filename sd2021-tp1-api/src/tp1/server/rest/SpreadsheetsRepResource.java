@@ -105,14 +105,6 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
     }
 
     private boolean cannotWrite(String password) {
-        System.out.println("i wanna write: " + url);
-        System.out.println("password: " + password);
-        System.out.println("fml leader is: " + leader.getUrl());
-        System.out.println(!isPrimary() && !serverSecret.equals(password));
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (int i = 0; i < 3; i++) {
-            System.out.println(stackTrace[i]);
-        }
         return !isPrimary() && !serverSecret.equals(password);
     }
 
@@ -312,8 +304,6 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
     @Override
     public void deleteUserSheets(Long version, String userId, String serverSecret) {
         if (cannotWrite(serverSecret)) {
-            System.out.println("i wanna write FFS: " + url);
-            System.out.println("serverSecret FFS: " + serverSecret);
             throw new WebApplicationException(Response.temporaryRedirect(
                     UriBuilder.fromPath(leader.getUrl() + RestRepSpreadsheets.PATH)
                             .path("deleteUserSheets")
@@ -322,13 +312,9 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
                             .build())
                     .build());
         } else {
-            System.out.println("cest moi: " + url);
             extractResult(spreadsheetsManager.deleteUserSheets(userId, serverSecret));
-            System.out.println("is it hard to do this turd?");
-            System.out.println("userId: " + userId + " serverSecret: " + serverSecret);
             updateVersion(Command.deleteUserSheets, new String[]{userId, serverSecret});
             replicateIfPrimary(uri -> () -> new RestSpreadsheetsClient(uri).deleteUserSheets(userId, serverSecret));
-            System.out.println("i should return ffs");
         }
     }
 
@@ -338,8 +324,6 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
             version = (long) 0;
         }
         if (cannotWrite(serverSecret)) {
-            System.out.println("i wanna write FFS: " + url);
-            System.out.println("serverSecret FFS: " + serverSecret);
             throw new WebApplicationException(Response.temporaryRedirect(
                     UriBuilder.fromPath(leader.getUrl() + RestRepSpreadsheets.PATH)
                             .path("commands")
@@ -347,7 +331,6 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
                             .build())
                     .build());
         } else {
-            System.out.println("is it hard to do this turd? dfghdfhgfdghfghddfgh");
             return commands.subList(Math.toIntExact(version), commands.size()).stream()
                     .map(ParameterizedCommand::encode)
                     .toArray(String[]::new);
