@@ -11,33 +11,29 @@ public class ParameterizedCommand {
 
     private static final Gson gson = new Gson();
     private static final String DELIMITER = "\t";
-    public final int id;
     public final Command type;
     private final String jsonArgs;
     private String sheet;
 
-    public ParameterizedCommand(Command type, int id, String[] args) {
+    public ParameterizedCommand(Command type, String[] args) {
         this.type = type;
-        this.id = id;
         this.jsonArgs = gson.toJson(args);
     }
 
-    public ParameterizedCommand(Command type, int id, String[] args, Spreadsheet spreadsheet) {
-        this(type, id, args);
+    public ParameterizedCommand(Command type, String[] args, Spreadsheet spreadsheet) {
+        this(type,args);
         sheet = gson.toJson(spreadsheet);
     }
 
     public ParameterizedCommand(String encoding) {
         String[] tokens = encoding.split(DELIMITER);
-        this.id = Integer.parseInt(tokens[0]);
-        this.type = Command.valueOf(tokens[1]);
-        this.jsonArgs = tokens[2];
-        this.sheet = tokens[3];
+        this.type = Command.valueOf(tokens[0]);
+        this.jsonArgs = tokens[1];
+        this.sheet = tokens[2];
     }
 
     public String encode() {
-        return id + DELIMITER +
-                type.name() + DELIMITER +
+        return type.name() + DELIMITER +
                 jsonArgs + DELIMITER +
                 sheet;
     }

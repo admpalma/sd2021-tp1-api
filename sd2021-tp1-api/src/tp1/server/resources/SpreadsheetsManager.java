@@ -62,6 +62,21 @@ public class SpreadsheetsManager implements Spreadsheets {
     @Override
     public Result<String> createSpreadsheet(Spreadsheet sheet, String password) {
 
+        Result<String> spreadsheetValidator = createSpreadsheetValidator(sheet, password);
+        if (!spreadsheetValidator.isOK()) {
+            return spreadsheetValidator;
+        }
+
+        String id = String.valueOf(totalSpreadsheets.incrementAndGet());
+
+        sheet.setSheetId(id);
+        sheet.setSheetURL(ownUri + RestSpreadsheets.PATH + "/" + id);
+        spreadsheets.put(id, sheet);
+
+        return Result.ok(id);
+    }
+
+    public Result<String> createSpreadsheetValidator(Spreadsheet sheet, String password) {
         if (sheet == null || password == null)
             return Result.error(Result.ErrorCode.BAD_REQUEST);
 
@@ -75,13 +90,7 @@ public class SpreadsheetsManager implements Spreadsheets {
                 return Result.error(Result.ErrorCode.BAD_REQUEST);
             }
         }
-        String id = String.valueOf(totalSpreadsheets.incrementAndGet());
-
-        sheet.setSheetId(id);
-        sheet.setSheetURL(ownUri + RestSpreadsheets.PATH + "/" + id);
-        spreadsheets.put(id, sheet);
-
-        return Result.ok(id);
+        return Result.ok();
     }
 
     @Override
@@ -100,6 +109,20 @@ public class SpreadsheetsManager implements Spreadsheets {
             }
             spreadsheets.remove(sheet.getSheetId());
             spreadsheetValues.remove(sheet);
+        }
+        return Result.ok();
+    }
+
+    public Result<Void> deleteSpreadsheetValidator(String sheetId, String password) {
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        if (sheet == null) {
+            return Result.error(Result.ErrorCode.NOT_FOUND);
+        }
+        if (!serverSecret.equals(password)) {
+            Result<User> userResult = authenticateUser(sheet.getOwner(), password);
+            if (!userResult.isOK()) {
+                return Result.error(userResult.error());
+            }
         }
         return Result.ok();
     }
@@ -156,6 +179,20 @@ public class SpreadsheetsManager implements Spreadsheets {
                 return Result.error(Result.ErrorCode.CONFLICT);
             sheet.setSharedWith(shared);
             spreadsheets.put(sheetId, sheet);
+        }
+        return Result.ok();
+    }
+
+    public Result<Void> commonSpreadsheetValidator(String sheetId, String password) {
+        Spreadsheet sheet = spreadsheets.get(sheetId);
+        if (sheet == null) {
+            return Result.error(Result.ErrorCode.NOT_FOUND);
+        }
+        if (!serverSecret.equals(password)) {
+            Result<User> userResult = authenticateUser(sheet.getOwner(), password);
+            if (!userResult.isOK()) {
+                return Result.error(userResult.error());
+            }
         }
         return Result.ok();
     }
@@ -353,7 +390,7 @@ public class SpreadsheetsManager implements Spreadsheets {
         };
     }
 
-    private Result<User> authenticateUser(String userId, String password) {
+    public Result<User> authenticateUser(String userId, String password) {
         URI userUri = discovery.knownUrisOf(domain + ":users")[0];
         return requesterFromURI(userUri).requestUser(userUri, userId, password);
     }
