@@ -15,8 +15,8 @@ public class UsersWS implements SoapUsers {
 
     private final UsersManager usersManager;
 
-    public UsersWS(Discovery discovery, String domain) {
-        usersManager = new UsersManager(discovery, domain);
+    public UsersWS(Discovery discovery, String domain,String serverSecret) {
+        usersManager = new UsersManager(discovery, domain,serverSecret);
     }
 
     private <T> T extractResult(Result<T> result) throws UsersException {

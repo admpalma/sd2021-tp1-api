@@ -23,7 +23,16 @@ public class SpreadsheetsRepRestServer extends AbstractRestServer {
             String serverURI = initServer(serverURI1 -> {
                 ResourceConfig config = new ResourceConfig();
                 AtomicInteger version = new AtomicInteger(0);
-                config.register(new SpreadsheetsRepResource(domain, serverURI1, new Discovery(SERVICE, serverURI1, domain), new SpreadsheetHashMap(), leader, version));
+                config.register(
+                        new SpreadsheetsRepResource(
+                                domain,
+                                serverURI1,
+                                new Discovery(SERVICE, serverURI1, domain),
+                                new SpreadsheetHashMap(),
+                                leader,
+                                version,
+                                args[1])
+                );
                 config.register(GenericExceptionMapper.class);
                 config.register(new VersionFilter(version));
                 return config;

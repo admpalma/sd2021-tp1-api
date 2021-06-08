@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 
 public class SpreadsheetsManager implements Spreadsheets {
 
-    public static final String serverSecret = "sheet_%|WRDLdwA4Bp_/EsUw%oj9";
+    private final String serverSecret;
 
     URI uri;
     private final static int CACHE_VALID_TTL = 20000;
@@ -44,7 +44,7 @@ public class SpreadsheetsManager implements Spreadsheets {
 
     private static Logger Log = Logger.getLogger(SpreadsheetsManager.class.getName());
 
-    public SpreadsheetsManager(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase spreadsheetDatabase) {
+    public SpreadsheetsManager(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase spreadsheetDatabase,String serverSecret) {
         spreadsheets = spreadsheetDatabase;
         spreadsheetValues = new ConcurrentHashMap<>();
         rangeCache = new ConcurrentHashMap<>();
@@ -56,6 +56,7 @@ public class SpreadsheetsManager implements Spreadsheets {
         totalSpreadsheets = new AtomicInteger(0);
         restRequester = new RestRequester();
         soapRequester = new SoapRequester();
+        this.serverSecret = serverSecret;
     }
 
     @Override
@@ -245,7 +246,7 @@ public class SpreadsheetsManager implements Spreadsheets {
 
     @Override
     public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range, String serverSecret) {
-        if (!SpreadsheetsManager.serverSecret.equals(serverSecret)) {
+        if (!serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on getSpreadsheetRangeValues");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
@@ -277,7 +278,7 @@ public class SpreadsheetsManager implements Spreadsheets {
 
     @Override
     public Result<Void> deleteUserSheets(String userId, String serverSecret) {
-        if (!UsersManager.serverSecret.equals(serverSecret) && !SpreadsheetsManager.serverSecret.equals(serverSecret)) {
+        if (!this.serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on delUserSheets");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }

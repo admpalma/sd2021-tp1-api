@@ -4,7 +4,6 @@ import jakarta.inject.Singleton;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.core.UriBuilderException;
 import tp1.api.Spreadsheet;
 import tp1.api.service.rest.RestRepSpreadsheets;
 import tp1.api.service.util.Result;
@@ -27,7 +26,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-import static tp1.server.resources.SpreadsheetsManager.serverSecret;
 import static tp1.util.ParameterizedCommand.Command;
 
 
@@ -42,7 +40,7 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
     public static final String RANGE_VALUES = "rangeValues";
     public static final String USER_EMAIL = "userEmail";
     public static final String RANGE = "range";
-    public static final String SERVER_SECRET = "serverSecret";
+    public final String serverSecret;
 
     private final SpreadsheetsManager spreadsheetsManager;
     private final List<ParameterizedCommand> commands;
@@ -55,15 +53,16 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
     private final Leader leader;
     private final ExecutorService executorService;
 
-    public SpreadsheetsRepResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb, Leader leader, AtomicInteger version) {
+    public SpreadsheetsRepResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb, Leader leader, AtomicInteger version,String serverSecret) {
         this.domain = domain;
         url = ownUri;
         this.discovery = discovery;
         this.leader = leader;
         this.version = version;
-        spreadsheetsManager = new SpreadsheetsManager(domain, ownUri, discovery, sdb);
+        spreadsheetsManager = new SpreadsheetsManager(domain, ownUri, discovery, sdb,serverSecret);
         executorService = Executors.newCachedThreadPool();
         commands = new ArrayList<>();
+        this.serverSecret = serverSecret;
     }
 
     private <T> T extractResult(Result<T> result) {
@@ -227,7 +226,7 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
                             .path(RANGE_VALUES)
                             .queryParam(USER_EMAIL, userEmail)
                             .queryParam(RANGE, range)
-                            .queryParam(SERVER_SECRET, serverSecret)
+                            .queryParam(this.serverSecret, serverSecret)
                             .build())
                     .build());
         }
@@ -326,7 +325,7 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
             System.out.println("is it hard to do this turd?");
             System.out.println("userId: " + userId + " serverSecret: " + serverSecret);
             updateVersion(Command.deleteUserSheets, new String[]{userId, serverSecret});
-            replicateIfPrimary(uri -> () -> new RestSpreadsheetsClient(uri).deleteUserSheets(userId, SpreadsheetsManager.serverSecret));
+            replicateIfPrimary(uri -> () -> new RestSpreadsheetsClient(uri).deleteUserSheets(userId, serverSecret));
             System.out.println("i should return ffs");
         }
     }

@@ -18,7 +18,8 @@ public class SpreadsheetsDropboxRestServer extends AbstractRestServer {
                     domain,
                     URI,
                     new Discovery(SERVICE, URI, domain),
-                    new SpreadsheetDropbox("/" + domain, "true".equals(args[1]))
+                    new SpreadsheetDropbox("/" + domain, "true".equals(args[1])),
+                    args[2]
             );
             String serverURI = initServer(serverURI1 -> {
                 ResourceConfig config1 = new ResourceConfig();

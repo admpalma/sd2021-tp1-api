@@ -14,7 +14,15 @@ public class SpreadsheetsSoapServer extends AbstractSoapServer {
     public static void main(String[] args) {
         try {
             String domain = args[0];
-            String serverURI = initServer(URI -> new SpreadsheetsWS(domain, URI, new Discovery(SERVICE, URI, domain), new SpreadsheetHashMap()), SOAP_SPREADSHEETS_PATH);
+            String serverURI = initServer(URI ->
+                    new SpreadsheetsWS(
+                            domain,
+                            URI,
+                            new Discovery(SERVICE, URI, domain),
+                            new SpreadsheetHashMap(),
+                            args[1]),
+                    SOAP_SPREADSHEETS_PATH
+            );
 
             Log.info(String.format("%s Server ready @ %s\n", SERVICE, serverURI));
             //More code can be executed here...

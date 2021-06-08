@@ -7,16 +7,15 @@ import java.util.logging.Logger;
 
 public class UsersRestServer extends AbstractRestServer {
 
-    private static final Logger Log = Logger.getLogger(UsersRestServer.class.getName());
     public static final String SERVICE = "users";
+    private static final Logger Log = Logger.getLogger(UsersRestServer.class.getName());
 
     public static void main(String[] args) {
         try {
             String domain = args[0];
-            final java.util.function.Function<String, Object> stringObjectFunction = URI -> new UsersResource(new Discovery(SERVICE, URI, domain), domain);
             String serverURI = initServer(serverURI1 -> {
                 ResourceConfig config1 = new ResourceConfig();
-                config1.register(stringObjectFunction.apply(serverURI1));
+                config1.register(new UsersResource(new Discovery(SERVICE, serverURI1, domain), domain, args[1]));
                 return config1;
             });
 

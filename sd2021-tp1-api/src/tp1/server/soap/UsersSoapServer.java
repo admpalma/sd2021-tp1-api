@@ -13,7 +13,16 @@ public class UsersSoapServer extends AbstractSoapServer {
     public static void main(String[] args) {
         try {
             String domain = args[0];
-            String serverURI = initServer(URI -> new UsersWS(new Discovery(SERVICE, URI, domain), domain), SOAP_USERS_PATH);
+            String serverURI = initServer(URI ->
+                    new UsersWS(
+                            new Discovery(
+                                    SERVICE,
+                                    URI,
+                                    domain),
+                            domain,
+                            args[1]),
+                    SOAP_USERS_PATH
+            );
 
             Log.info(String.format("%s Server ready @ %s\n", SERVICE, serverURI));
             //More code can be executed here...

@@ -14,8 +14,8 @@ public class SpreadsheetsWS implements SoapSpreadsheets {
 
     private final SpreadsheetsManager spreadsheetsManager;
 
-    public SpreadsheetsWS(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
-        spreadsheetsManager = new SpreadsheetsManager(domain, ownUri, discovery,sdb);
+    public SpreadsheetsWS(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb,String serverSecret) {
+        spreadsheetsManager = new SpreadsheetsManager(domain, ownUri, discovery,sdb,serverSecret);
     }
 
     private <T> T extractResult(Result<T> result) throws SheetsException {

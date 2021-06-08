@@ -1,12 +1,9 @@
 package tp1.server.resources.requester;
 
 import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.ClientProperties;
 import tp1.api.User;
 import tp1.api.service.rest.RestSpreadsheets;
 import tp1.api.service.rest.RestUsers;

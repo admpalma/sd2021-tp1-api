@@ -62,16 +62,16 @@ public class SpreadsheetDropbox implements SpreadsheetDatabase {
     and serve only as a listing of which files belong to who
 
     ├── sheets
-    │ ├── 1
-    │ ├── 2
-    │ ├── 3
-    │ ├── 4
-    │ └── 5
+    │   ├── 1
+    │   ├── 2
+    │   ├── 3
+    │   ├── 4
+    │   └── 5
     └── users
         ├── user-1
-        │ ├── 1
-        │ ├── 2
-        │ └── 3
+        │   ├── 1
+        │   ├── 2
+        │   └── 3
         └── user-2
             ├── 4
             └── 5

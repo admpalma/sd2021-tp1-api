@@ -14,7 +14,7 @@ public class SpreadsheetsRestServer extends AbstractRestServer {
     public static void main(String[] args) {
         try {
             String domain = args[0];
-            final java.util.function.Function<String, Object> stringObjectFunction = URI -> new SpreadsheetsResource(domain, URI, new Discovery(SERVICE, URI, domain), new SpreadsheetHashMap());
+            final java.util.function.Function<String, Object> stringObjectFunction = URI -> new SpreadsheetsResource(domain, URI, new Discovery(SERVICE, URI, domain), new SpreadsheetHashMap(),args[1]);
             String serverURI = initServer(serverURI1 -> {
                 ResourceConfig config1 = new ResourceConfig();
                 config1.register(stringObjectFunction.apply(serverURI1));

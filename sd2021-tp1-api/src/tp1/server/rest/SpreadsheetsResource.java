@@ -20,8 +20,8 @@ public class SpreadsheetsResource implements RestSpreadsheets {
 
     private static Logger Log = Logger.getLogger(SpreadsheetsResource.class.getName());
 
-    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb) {
-        spreadsheetsResource = new SpreadsheetsManager(domain, ownUri, discovery,sdb);
+    public SpreadsheetsResource(String domain, String ownUri, Discovery discovery, SpreadsheetDatabase sdb,String serverSecret) {
+        spreadsheetsResource = new SpreadsheetsManager(domain, ownUri, discovery,sdb,serverSecret);
     }
 
     private <T> T extractResult(Result<T> result) {
