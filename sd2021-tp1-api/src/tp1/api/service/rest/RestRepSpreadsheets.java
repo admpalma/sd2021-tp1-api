@@ -162,4 +162,8 @@ public interface RestRepSpreadsheets {
     @DELETE
     @Path("/deleteUserSheets/{userId}")
     void deleteUserSheets(@HeaderParam(HEADER_VERSION) Long version, @PathParam("userId") String userId, @QueryParam("serverSecret") String serverSecret);
+
+    @GET
+    @Path("/commands")
+    String[] getCommands(@QueryParam("version") Long version, @QueryParam("serverSecret") String serverSecret);
 }
