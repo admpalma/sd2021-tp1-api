@@ -238,6 +238,8 @@ public class SpreadsheetsRepResource implements RestRepSpreadsheets {
             Result<String[]> commands = new RestSpreadsheetsClient(URI.create(leader.getUrl())).getCommands(version, serverSecret);
             if (commands.isOK()) {
                 Arrays.stream(commands.value()).map(ParameterizedCommand::new).forEach(command -> {
+                    this.commands.add(command);
+                    this.version.set(command.id);
                     String[] args = command.args();
                     switch (command.type) {
                         case createSpreadsheet -> spreadsheetsManager.createSpreadsheet(command.spreadsheet(), args[0]);
