@@ -246,7 +246,7 @@ public class SpreadsheetsManager implements Spreadsheets {
 
     @Override
     public Result<String[][]> getSpreadsheetRangeValues(String sheetId, String userEmail, String range, String serverSecret) {
-        if (!serverSecret.equals(serverSecret)) {
+        if (!this.serverSecret.equals(serverSecret)) {
             Log.severe("Wrong server secret on getSpreadsheetRangeValues");
             return Result.error(Result.ErrorCode.FORBIDDEN);
         }
